@@ -117,7 +117,6 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
                     required
                   />
                   <PasswordToggle
-                    type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
                   >
                     {showNewPassword ? (
