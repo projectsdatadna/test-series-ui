@@ -152,7 +152,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete, onSkip }
                   {formData.grades.map((grade, index) => (
                     <Tag key={`grade-${index}`}>
                       {grade}
-                      <TagRemove type="button" onClick={() => removeTag('grades', index)}>
+                      <TagRemove onClick={() => removeTag('grades', index)}>
                         <XMarkIcon className="w-3 h-3" />
                       </TagRemove>
                     </Tag>
@@ -160,7 +160,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete, onSkip }
                   {formData.subjects.map((subject, index) => (
                     <Tag key={`subject-${index}`}>
                       {subject}
-                      <TagRemove type="button" onClick={() => removeTag('subjects', index)}>
+                      <TagRemove onClick={() => removeTag('subjects', index)}>
                         <XMarkIcon className="w-3 h-3" />
                       </TagRemove>
                     </Tag>

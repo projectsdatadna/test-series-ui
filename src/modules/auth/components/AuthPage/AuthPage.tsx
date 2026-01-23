@@ -6,7 +6,6 @@ import {
   confirmEmail,
   completeProfile,
   forgotPassword,
-  resetPassword,
   verifyForgotPasswordOTP,
   confirmForgotPassword,
   resendEmailConfirmation,
