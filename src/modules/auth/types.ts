@@ -28,6 +28,8 @@ export type AuthStep = 'login' | 'signup' | 'verify-otp' | 'profile-setup' | 'fo
 export interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
+  userId?: string;
+  roleId?: UserRole;
   loading: boolean;
   error: string | null;
   currentStep: AuthStep;
@@ -69,8 +71,14 @@ export interface EmailSignupRequest {
 
 export interface EmailSignupResponse {
   message: string;
+  success: boolean;
+  confirmationRequired?: boolean;
+  email?: string;
   userId?: string;
-  requiresEmailConfirmation?: boolean;
+  data?: {
+    userId: string;
+    email: string;
+  };
 }
 
 export interface EmailLoginRequest {
@@ -79,9 +87,38 @@ export interface EmailLoginRequest {
 }
 
 export interface EmailLoginResponse {
-  token: string;
-  user: User;
+  success: boolean;
   message: string;
+  data: {
+    access_token: string;
+    access_token_expires_at: string;
+    id_token: string;
+    id_token_expires_at: string;
+    refresh_token: string;
+    refresh_token_expires_at: string;
+    token_type: string;
+    expires_in: number;
+    session: {
+      session_id: string;
+      created_at: string;
+    };
+    token_validity: {
+      access_token_days: number;
+      id_token_days: number;
+      refresh_token_days: number;
+    };
+    user: {
+      user_id: string;
+      email: string;
+      given_name?: string;
+      family_name?: string;
+      name?: string;
+      email_verified?: boolean;
+      custom?: {
+        role_id: string;
+      };
+    };
+  };
 }
 
 export interface ConfirmEmailRequest {
@@ -113,7 +150,20 @@ export interface ProfileCompletionRequest {
 
 export interface ProfileCompletionResponse {
   message: string;
-  user: User;
+  user?: User;
+  success?: boolean;
+  data?: {
+    profileSetupId: string;
+    userId: string;
+    roleId: string;
+    schoolName: string;
+    grades: string[];
+    subjects: string[];
+    experienceLevel: string;
+    preferences: string[];
+    created_at: string;
+  };
+  roleId?: string;
 }
 
 export interface ForgotPasswordRequest {

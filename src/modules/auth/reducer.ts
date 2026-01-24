@@ -2,7 +2,7 @@
  * Auth Module Reducer
  */
 
-import type { AuthState, AuthStep } from './types';
+import type { AuthState, AuthStep, UserRole } from './types';
 import type { AuthAction } from './actions';
 import {
   AUTH_LOGIN_REQUEST,
@@ -30,11 +30,16 @@ import {
   AUTH_RESET_PASSWORD_SUCCESS,
   AUTH_RESET_PASSWORD_FAILURE,
   AUTH_SET_STEP,
+  AUTH_SET_USER_ID,
+  AUTH_SET_ROLE_ID,
+  AUTH_SET_AUTHENTICATED,
 } from './actions';
 
 const initialState: AuthState = {
   isAuthenticated: false,
   user: null,
+  userId: undefined,
+  roleId: undefined,
   loading: false,
   error: null,
   currentStep: 'login',
@@ -110,10 +115,15 @@ export const authReducer = (
       };
 
     case AUTH_SIGNUP_SUCCESS:
+      console.log('[REDUCER] AUTH_SIGNUP_SUCCESS case triggered');
+      console.log('[REDUCER] action.payload:', action.payload);
+      console.log('[REDUCER] Previous state.userId:', state.userId);
       return {
         ...state,
         loading: false,
         error: null,
+        // Keep existing userId if already set, otherwise try to extract from response
+        userId: state.userId || action.payload?.data?.userId || action.payload?.userId,
         currentStep: 'verify-otp',
       };
 
@@ -166,7 +176,7 @@ export const authReducer = (
         loading: false,
         error: null,
         isAuthenticated: true,
-        user: action.payload.user,
+        user: action.payload.user || null,
       };
 
     case AUTH_PROFILE_COMPLETION_FAILURE:
@@ -224,7 +234,10 @@ export const authReducer = (
 
     // Other actions
     case AUTH_LOGOUT:
-      return initialState;
+      return {
+        ...initialState,
+        userId: undefined,
+      };
 
     case AUTH_SET_CREDENTIALS:
       return {
@@ -242,6 +255,33 @@ export const authReducer = (
       return {
         ...state,
         currentStep: action.payload as AuthStep,
+      };
+
+    case AUTH_SET_USER_ID:
+      console.log('[REDUCER] AUTH_SET_USER_ID case triggered');
+      console.log('[REDUCER] action.payload:', action.payload);
+      console.log('[REDUCER] Previous state.userId:', state.userId);
+      const newState = {
+        ...state,
+        userId: action.payload,
+      };
+      console.log('[REDUCER] New state.userId:', newState.userId);
+      return newState;
+
+    case AUTH_SET_ROLE_ID:
+      console.log('[REDUCER] AUTH_SET_ROLE_ID case triggered');
+      console.log('[REDUCER] action.payload:', action.payload);
+      return {
+        ...state,
+        roleId: action.payload as UserRole,
+      };
+
+    case AUTH_SET_AUTHENTICATED:
+      console.log('[REDUCER] AUTH_SET_AUTHENTICATED case triggered');
+      console.log('[REDUCER] action.payload:', action.payload);
+      return {
+        ...state,
+        isAuthenticated: action.payload,
       };
 
     case AUTH_NEXT_STEP:

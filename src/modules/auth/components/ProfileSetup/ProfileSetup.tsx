@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { BellIcon, UserCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useDispatch, useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
+import authSelector from '../../selectors';
+import { setupProfile } from '../../actions';
 import {
   Container,
   BackgroundDecoration,
@@ -29,6 +33,12 @@ import {
   Tag,
   TagRemove,
   AddButton,
+  TagDropdown,
+  TagDropdownContent,
+  TagDropdownSection,
+  TagDropdownSectionTitle,
+  TagDropdownOption,
+  TagDropdownInput,
   ExperienceGrid,
   ExperienceButton,
   PreferencesGrid,
@@ -54,32 +64,79 @@ interface ProfileSetupProps {
 }
 
 export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete, onSkip }) => {
+  const dispatch = useDispatch();
+  const userId = useSelector(authSelector.getUserId);
+  
+  console.log('[ProfileSetup] Component mounted/re-rendered, userId from Redux:', userId);
   const [formData, setFormData] = useState({
     schoolName: '',
-    grades: ['Grade 10'],
-    subjects: ['Mathematics', 'Physics'],
+    grades: ['Class X', 'Class XI', 'Class XII'] as string[],
+    subjects: [] as string[],
     experienceLevel: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
     preferences: ['Mock Tests', 'Practice Sheets'],
   });
 
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+  const [customTagInput, setCustomTagInput] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const gradeOptions = ['Class I', 'Class II', 'Class III', 'Class IV', 'Class V', 'Class VI', 'Class VII', 'Class VIII', 'Class IX', 'Class X', 'Class XI', 'Class XII'];
+  const subjectOptions = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Hindi', 'Social Studies', 'Computer Science', 'Economics', 'History', 'Geography'];
   const availablePreferences = ['Mock Tests', 'Video Tutorials', 'Practice Sheets', 'Live Q&A'];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsTagDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
+    if (!formData.schoolName.trim()) {
+      toast.error('School name is required');
+      return;
+    }
+    
     try {
-      await onComplete(formData);
+      await dispatch(setupProfile({ ...formData, userId }) as any);
+      onComplete(formData);
     } catch (error) {
       // Error is already handled by the action with toast
     }
   };
 
-  const removeTag = (type: 'grades' | 'subjects', index: number) => {
+  const removeTag = (type: 'grades' | 'subjects', value: string) => {
     setFormData(prev => ({
       ...prev,
-      [type]: prev[type].filter((_, i) => i !== index)
+      [type]: prev[type].filter(item => item !== value)
     }));
+  };
+
+  const toggleTag = (type: 'grades' | 'subjects', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [type]: prev[type].includes(value)
+        ? prev[type].filter(item => item !== value)
+        : [...prev[type], value]
+    }));
+  };
+
+  const addCustomTag = () => {
+    if (customTagInput.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        subjects: [...prev.subjects, customTagInput.trim()]
+      }));
+      setCustomTagInput('');
+    }
   };
 
   const togglePreference = (preference: string) => {
@@ -143,29 +200,77 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete, onSkip }
                   placeholder="Enter your school or institution name"
                   value={formData.schoolName}
                   onChange={(e) => setFormData(prev => ({ ...prev, schoolName: e.target.value }))}
+                  required
                 />
               </FormGroup>
 
               <FormGroup>
                 <FormLabel>Grade / Subject</FormLabel>
-                <TagContainer>
-                  {formData.grades.map((grade, index) => (
-                    <Tag key={`grade-${index}`}>
+                <TagContainer ref={dropdownRef}>
+                  {formData.grades.map((grade) => (
+                    <Tag key={`grade-${grade}`}>
                       {grade}
-                      <TagRemove onClick={() => removeTag('grades', index)}>
+                      <TagRemove onClick={() => removeTag('grades', grade)}>
                         <XMarkIcon className="w-3 h-3" />
                       </TagRemove>
                     </Tag>
                   ))}
-                  {formData.subjects.map((subject, index) => (
-                    <Tag key={`subject-${index}`}>
+                  {formData.subjects.map((subject) => (
+                    <Tag key={`subject-${subject}`}>
                       {subject}
-                      <TagRemove onClick={() => removeTag('subjects', index)}>
+                      <TagRemove onClick={() => removeTag('subjects', subject)}>
                         <XMarkIcon className="w-3 h-3" />
                       </TagRemove>
                     </Tag>
                   ))}
-                  <AddButton type="button">+ Add more</AddButton>
+                  <AddButton type="button" onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}>
+                    + Add more
+                  </AddButton>
+                  <TagDropdown isOpen={isTagDropdownOpen}>
+                    <TagDropdownContent>
+                      <TagDropdownSection>
+                        <TagDropdownSectionTitle>Classes</TagDropdownSectionTitle>
+                        {gradeOptions.map((grade) => (
+                          <TagDropdownOption
+                            key={grade}
+                            type="button"
+                            selected={formData.grades.includes(grade)}
+                            onClick={() => toggleTag('grades', grade)}
+                          >
+                            {grade}
+                          </TagDropdownOption>
+                        ))}
+                      </TagDropdownSection>
+                      <TagDropdownSection>
+                        <TagDropdownSectionTitle>Subjects</TagDropdownSectionTitle>
+                        {subjectOptions.map((subject) => (
+                          <TagDropdownOption
+                            key={subject}
+                            type="button"
+                            selected={formData.subjects.includes(subject)}
+                            onClick={() => toggleTag('subjects', subject)}
+                          >
+                            {subject}
+                          </TagDropdownOption>
+                        ))}
+                        <TagDropdownInput
+                          type="text"
+                          placeholder="Add custom subject"
+                          value={customTagInput}
+                          onChange={(e) => setCustomTagInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addCustomTag();
+                            }
+                          }}
+                        />
+                        <AddButton type="button" onClick={addCustomTag} style={{ width: '100%', marginTop: '0.5rem' }}>
+                          + Add Custom
+                        </AddButton>
+                      </TagDropdownSection>
+                    </TagDropdownContent>
+                  </TagDropdown>
                 </TagContainer>
               </FormGroup>
 

@@ -26,6 +26,7 @@ import type {
   ResendEmailConfirmationResponse,
 } from './types';
 import { api, authTokenManager } from '../../utils/api';
+import { storageManager } from '../../utils/storage';
 import toast from 'react-hot-toast';
 
 // Action Types
@@ -38,6 +39,9 @@ export const AUTH_SELECT_ROLE = 'auth/SELECT_ROLE';
 export const AUTH_NEXT_STEP = 'auth/NEXT_STEP';
 export const AUTH_PREV_STEP = 'auth/PREV_STEP';
 export const AUTH_CLEAR_ERROR = 'auth/CLEAR_ERROR';
+export const AUTH_SET_USER_ID = 'auth/SET_USER_ID';
+export const AUTH_SET_ROLE_ID = 'auth/SET_ROLE_ID';
+export const AUTH_SET_AUTHENTICATED = 'auth/SET_AUTHENTICATED';
 
 // New action types for API integration
 export const AUTH_SIGNUP_REQUEST = 'auth/SIGNUP_REQUEST';
@@ -108,6 +112,21 @@ export interface PrevStepAction {
 
 export interface ClearErrorAction {
   type: typeof AUTH_CLEAR_ERROR;
+}
+
+export interface SetUserIdAction {
+  type: typeof AUTH_SET_USER_ID;
+  payload: string;
+}
+
+export interface SetRoleIdAction {
+  type: typeof AUTH_SET_ROLE_ID;
+  payload: string;
+}
+
+export interface SetAuthenticatedAction {
+  type: typeof AUTH_SET_AUTHENTICATED;
+  payload: boolean;
 }
 
 // New action interfaces
@@ -263,6 +282,9 @@ export type AuthAction =
   | ResetPasswordSuccessAction
   | ResetPasswordFailureAction
   | SetStepAction
+  | SetUserIdAction
+  | SetRoleIdAction
+  | SetAuthenticatedAction
   | ForgotPasswordVerifyOTPRequestAction
   | ForgotPasswordVerifyOTPSuccessAction
   | ForgotPasswordVerifyOTPFailureAction
@@ -319,6 +341,30 @@ export const setStep = (step: string): SetStepAction => ({
   type: AUTH_SET_STEP,
   payload: step,
 });
+
+export const setUserId = (userId: string): SetUserIdAction => {
+  console.log('[ACTION] setUserId called with:', userId);
+  return {
+    type: AUTH_SET_USER_ID,
+    payload: userId,
+  };
+};
+
+export const setRoleId = (roleId: string): SetRoleIdAction => {
+  console.log('[ACTION] setRoleId called with:', roleId);
+  return {
+    type: AUTH_SET_ROLE_ID,
+    payload: roleId,
+  };
+};
+
+export const setAuthenticated = (isAuthenticated: boolean): SetAuthenticatedAction => {
+  console.log('[ACTION] setAuthenticated called with:', isAuthenticated);
+  return {
+    type: AUTH_SET_AUTHENTICATED,
+    payload: isAuthenticated,
+  };
+};
 
 // New action creators for forgot password OTP flow
 export const forgotPasswordVerifyOTPRequest = (payload: ForgotPasswordVerifyOTPRequest): ForgotPasswordVerifyOTPRequestAction => ({
@@ -452,7 +498,18 @@ export const emailSignup = (signupData: EmailSignupRequest) => {
       
       const response = await api.post<EmailSignupResponse>('/auth/email-signup', signupData);
       
+      // Extract userId from response - api.post returns response.data already
+      const userId = response?.data?.userId || response?.userId;
+      
+      // Dispatch signupSuccess first
       dispatch(signupSuccess(response));
+      
+      // Then dispatch setUserId to ensure it's set in Redux
+      if (userId) {
+        dispatch(setUserId(userId));
+      } else {
+        console.warn('[emailSignup] No userId found in response');
+      }
       
       // Show success toast
       toast.success('Account created successfully! Please check your email for verification code.');
@@ -481,12 +538,68 @@ export const emailLogin = (loginData: EmailLoginRequest) => {
       
       const response = await api.post<EmailLoginResponse>('/auth/email-login', loginData);
       
+      console.log('[emailLogin] Full API response:', response);
+      
+      // Extract access token from response
+      const accessToken = response?.data?.access_token;
+      console.log('[emailLogin] Extracted accessToken:', accessToken ? 'Found' : 'Not found');
+      
       // Store auth token
-      if (response.token) {
-        authTokenManager.setToken(response.token);
+      if (accessToken) {
+        authTokenManager.setToken(accessToken);
+        console.log('[emailLogin] Token stored in authTokenManager');
       }
       
-      dispatch(loginSuccess(response.user));
+      // Extract roleId - check multiple possible locations
+      let roleId = response?.data?.user?.custom?.role_id;
+      
+      // Fallback: check if roleId is directly in user object
+      if (!roleId && response?.data?.user) {
+        roleId = (response.data.user as any).role_id;
+      }
+      
+      console.log('[emailLogin] Extracted roleId:', roleId);
+      console.log('[emailLogin] User object:', response?.data?.user);
+      
+      // Create user object from response
+      const user: User = {
+        id: response?.data?.user?.user_id || '',
+        email: response?.data?.user?.email || '',
+        name: response?.data?.user?.name || `${response?.data?.user?.given_name || ''} ${response?.data?.user?.family_name || ''}`.trim(),
+        role: (roleId as UserRole) || 'student',
+      };
+      
+      console.log('[emailLogin] Created user object:', user);
+      
+      // Dispatch loginSuccess FIRST to set user and isAuthenticated
+      dispatch(loginSuccess(user));
+      console.log('[emailLogin] Dispatched loginSuccess');
+      
+      // Then dispatch setRoleId to ensure it's in Redux
+      if (roleId) {
+        console.log('[emailLogin] Dispatching setRoleId:', roleId);
+        dispatch(setRoleId(roleId));
+      } else {
+        console.warn('[emailLogin] roleId is undefined, using default role from user object');
+      }
+      
+      // Save auth data to localStorage
+      if (accessToken && user.id) {
+        const authDataToSave = {
+          token: accessToken,
+          roleId: (roleId as UserRole) || user.role,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          },
+        };
+        console.log('[emailLogin] Saving auth data to localStorage:', authDataToSave);
+        storageManager.saveAuthData(authDataToSave);
+      } else {
+        console.warn('[emailLogin] Missing required data for localStorage:', { accessToken: !!accessToken, userId: user.id });
+      }
       
       // Show success toast
       toast.success('Login successful! Welcome back.');
@@ -494,6 +607,7 @@ export const emailLogin = (loginData: EmailLoginRequest) => {
       return response;
     } catch (error: any) {
       const errorMessage = error.message || 'Login failed';
+      console.error('[emailLogin] Error:', errorMessage);
       dispatch(loginFailure(errorMessage));
       
       // Show error toast
@@ -533,36 +647,7 @@ export const confirmEmail = (confirmData: ConfirmEmailRequest) => {
   };
 };
 
-// 4. Profile Completion
-export const completeProfile = (profileData: ProfileCompletionRequest) => {
-  return async (dispatch: any) => {
-    try {
-      dispatch(profileCompletionRequest(profileData));
-      
-      const response = await api.post<ProfileCompletionResponse>('/users', profileData);
-      
-      dispatch(profileCompletionSuccess(response));
-      
-      // Update user data
-      dispatch(loginSuccess(response.user));
-      
-      // Show success toast
-      toast.success('Profile completed successfully! Welcome to Test Series.');
-      
-      return response;
-    } catch (error: any) {
-      const errorMessage = error.message || 'Profile completion failed';
-      dispatch(profileCompletionFailure(errorMessage));
-      
-      // Show error toast
-      toast.error(errorMessage);
-      
-      throw error;
-    }
-  };
-};
-
-// 5. Forgot Password
+// 4. Forgot Password
 export const forgotPassword = (forgotData: ForgotPasswordRequest) => {
   return async (dispatch: any) => {
     try {
@@ -624,6 +709,7 @@ export const resetPassword = (resetData: ResetPasswordRequest) => {
 export const logoutUser = () => {
   return (dispatch: any) => {
     authTokenManager.removeToken();
+    storageManager.clearAuthData();
     dispatch(logout());
   };
 };
@@ -645,6 +731,53 @@ export const resendEmailConfirmation = (resendData: ResendEmailConfirmationReque
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to resend verification code';
       dispatch(resendEmailConfirmationFailure(errorMessage));
+      
+      // Show error toast
+      toast.error(errorMessage);
+      
+      throw error;
+    }
+  };
+};
+
+// 10. Profile Setup
+export const setupProfile = (profileData: {
+  schoolName: string;
+  grades: string[];
+  subjects: string[];
+  experienceLevel: 'beginner' | 'intermediate' | 'advanced';
+  preferences: string[];
+  userId?: string;
+}) => {
+  return async (dispatch: any) => {
+    try {
+      const response = await api.post<ProfileCompletionResponse>('/auth/profile-setup', profileData);
+      
+      console.log('[setupProfile] API Response:', response);
+      
+      // Extract roleId from response
+      const roleId = response?.data?.roleId || response?.roleId;
+      console.log('[setupProfile] Extracted roleId:', roleId);
+      
+      // Dispatch profile completion success
+      dispatch(profileCompletionSuccess(response));
+      
+      // Dispatch setRoleId to store in Redux
+      if (roleId) {
+        console.log('[setupProfile] Dispatching setRoleId with:', roleId);
+        dispatch(setRoleId(roleId));
+      }
+      
+      // Mark as authenticated
+      dispatch(setAuthenticated(true));
+      
+      // Show success toast
+      toast.success('Profile setup completed successfully!');
+      
+      return response;
+    } catch (error: any) {
+      const errorMessage = error.message || 'Profile setup failed';
+      dispatch(profileCompletionFailure(errorMessage));
       
       // Show error toast
       toast.error(errorMessage);

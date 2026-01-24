@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { EyeIcon, EyeSlashIcon, UserIcon, EnvelopeIcon, AcademicCapIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { getCountries, getCountryCallingCode } from 'libphonenumber-js';
 import type { UserRole } from '../../types';
 import {
   Container,
@@ -31,7 +32,9 @@ import {
   FormInput,
   InputIcon,
   MobileContainer,
-  CountryCode,
+  CountryCodeButton,
+  CountryCodeDropdown,
+  CountryCodeOption,
   MobileInput,
   PasswordContainer,
   PasswordToggle,
@@ -68,8 +71,36 @@ export const Signup: React.FC<SignupProps> = ({ onLogin, onSignup }) => {
     mobile: '',
     password: '',
     role: 'student' as UserRole,
+    countryCode: 'US',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Get list of countries with their calling codes, sorted by calling code
+  const countryCodes = useMemo(() => {
+    const countries = getCountries();
+    return countries
+      .map((country) => ({
+        code: country,
+        callingCode: `+${getCountryCallingCode(country)}`,
+      }))
+      .sort((a, b) => {
+        return a.code.localeCompare(b.code);
+      });
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsCountryDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const getPasswordStrength = (password: string) => {
     let strength = 0;
@@ -89,7 +120,7 @@ export const Signup: React.FC<SignupProps> = ({ onLogin, onSignup }) => {
     
     if (formData.fullName && formData.email && formData.mobile && formData.password) {
       try {
-        await onSignup(formData);
+        onSignup(formData);
       } catch (error) {
         // Error is already handled by the action with toast
       }
@@ -98,6 +129,11 @@ export const Signup: React.FC<SignupProps> = ({ onLogin, onSignup }) => {
 
   const handleInputChange = (field: string, value: string | UserRole) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCountryCodeSelect = (countryCode: string) => {
+    handleInputChange('countryCode', countryCode);
+    setIsCountryDropdownOpen(false);
   };
 
   return (
@@ -205,8 +241,24 @@ export const Signup: React.FC<SignupProps> = ({ onLogin, onSignup }) => {
 
               <FormGroup>
                 <FormLabel>Mobile Number</FormLabel>
-                <MobileContainer>
-                  <CountryCode>+1</CountryCode>
+                <MobileContainer ref={dropdownRef}>
+                  <CountryCodeButton
+                    type="button"
+                    onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+                  >
+                    {countryCodes.find((c) => c.code === formData.countryCode)?.callingCode || '+1'}
+                  </CountryCodeButton>
+                  <CountryCodeDropdown isOpen={isCountryDropdownOpen}>
+                    {countryCodes.map((country) => (
+                      <CountryCodeOption
+                        key={country.code}
+                        type="button"
+                        onClick={() => handleCountryCodeSelect(country.code)}
+                      >
+                        {`${country.code}   `} {country.callingCode}
+                      </CountryCodeOption>
+                    ))}
+                  </CountryCodeDropdown>
                   <MobileInput
                     type="tel"
                     placeholder="(555) 000-0000"

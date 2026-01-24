@@ -210,6 +210,7 @@ export const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  padding-bottom: 1rem;
 `;
 
 export const FormLabel = styled.label`
@@ -244,6 +245,7 @@ export const FormInput = styled.input`
 `;
 
 export const TagContainer = styled.div`
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -287,6 +289,108 @@ export const AddButton = styled.button`
   
   &:hover {
     color: #2463eb;
+  }
+`;
+
+export const TagDropdown = styled.div<{ isOpen: boolean }>`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  display: ${props => props.isOpen ? 'block' : 'none'};
+  max-height: 400px;
+  overflow-y: auto;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+    
+    &:hover {
+      background: #94a3b8;
+    }
+  }
+`;
+
+export const TagDropdownContent = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+export const TagDropdownSection = styled.div`
+  padding: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+export const TagDropdownSectionTitle = styled.p`
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.5rem 0;
+`;
+
+export const TagDropdownOption = styled.button<{ selected: boolean }>`
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid ${props => props.selected ? '#2463eb' : '#e2e8f0'};
+  background-color: ${props => props.selected ? 'rgba(36, 99, 235, 0.1)' : 'white'};
+  color: ${props => props.selected ? '#2463eb' : '#475569'};
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  margin-bottom: 0.25rem;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: ${props => props.selected ? 'rgba(36, 99, 235, 0.15)' : '#f8fafc'};
+    border-color: #2463eb;
+  }
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
+export const TagDropdownInput = styled.input`
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  background-color: #f8fafc;
+  color: #1e293b;
+  transition: all 0.2s;
+  
+  &:focus {
+    outline: none;
+    border-color: #2463eb;
+    background-color: white;
+    box-shadow: 0 0 0 2px rgba(36, 99, 235, 0.1);
+  }
+  
+  &::placeholder {
+    color: #94a3b8;
   }
 `;
 

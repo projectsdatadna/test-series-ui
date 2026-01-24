@@ -10,12 +10,15 @@ export const selectIsAuthenticated = (state: RootState): boolean =>
 
 export const selectUser = (state: RootState) => state.auth.user;
 
+export const selectUserId = (state: RootState): string | undefined => state.auth.userId;
+
+export const selectUserRole = (state: RootState): string | undefined => state.auth.roleId;
+
 export const selectLoading = (state: RootState): boolean => state.auth.loading;
 
 export const selectError = (state: RootState): string | null => state.auth.error;
 
-export const selectCurrentStep = (state: RootState): AuthStep =>
-  state.auth.currentStep;
+export const selectCurrentStep = (state: RootState): AuthStep => state.auth.currentStep;
 
 export const selectCredentials = (state: RootState) => state.auth.credentials;
 
@@ -33,3 +36,24 @@ export const selectPassword = (state: RootState): string => state.auth.credentia
 
 export const selectRememberMe = (state: RootState): boolean =>
   state.auth.credentials.rememberMe;
+
+// Auth Selector Object
+const authSelector = {
+  getIsAuthenticated: selectIsAuthenticated,
+  getUser: selectUser,
+  getUserId: selectUserId,
+  getUserRole: selectUserRole,
+  getLoading: selectLoading,
+  getError: selectError,
+  getCurrentStep: selectCurrentStep,
+  getCredentials: selectCredentials,
+  getSelectedRole: selectSelectedRole,
+  getSignupData: selectSignupData,
+  getOtpData: selectOtpData,
+  getProfileData: selectProfileData,
+  getEmail: selectEmail,
+  getPassword: selectPassword,
+  getRememberMe: selectRememberMe,
+};
+
+export default authSelector;

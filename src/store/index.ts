@@ -5,11 +5,23 @@ import { authReducer } from '../modules/auth/reducer';
 import type { AuthState } from '../modules/auth/types';
 import { assessmentConfiguratorReducer } from '../modules/assessmentConfigurator/reducer';
 import type { AssessmentConfiguratorState } from '../modules/assessmentConfigurator/types';
+import { navbarReducer } from '../modules/navbar/reducer';
+import type { NavbarState } from '../modules/navbar/types';
+import { adminDashboardReducer } from '../modules/adminDashboard/reducer';
+import type { AdminDashboardState } from '../modules/adminDashboard/types';
+import { teacherDashboardReducer } from '../modules/teacherDashboard/reducer';
+import type { TeacherDashboardState } from '../modules/teacherDashboard/types';
+import { studentDashboardReducer } from '../modules/studentDashboard/reducer';
+import type { StudentDashboardState } from '../modules/studentDashboard/types';
 
 // Root state shape
 export interface RootState {
   auth: AuthState;
   assessmentConfigurator: AssessmentConfiguratorState;
+  navbar: NavbarState;
+  adminDashboard: AdminDashboardState;
+  teacherDashboard: TeacherDashboardState;
+  studentDashboard: StudentDashboardState;
 }
 
 // Create combined reducer
@@ -18,11 +30,19 @@ const rootReducer: Reducer<RootState, AnyAction> = (state, action) => {
     return {
       auth: authReducer(undefined, action as any),
       assessmentConfigurator: assessmentConfiguratorReducer(undefined, action as any),
+      navbar: navbarReducer(undefined, action as any),
+      adminDashboard: adminDashboardReducer(undefined, action as any),
+      teacherDashboard: teacherDashboardReducer(undefined, action as any),
+      studentDashboard: studentDashboardReducer(undefined, action as any),
     };
   }
   return {
     auth: authReducer(state.auth, action as any),
     assessmentConfigurator: assessmentConfiguratorReducer(state.assessmentConfigurator, action as any),
+    navbar: navbarReducer(state.navbar, action as any),
+    adminDashboard: adminDashboardReducer(state.adminDashboard, action as any),
+    teacherDashboard: teacherDashboardReducer(state.teacherDashboard, action as any),
+    studentDashboard: studentDashboardReducer(state.studentDashboard, action as any),
   };
 };
 

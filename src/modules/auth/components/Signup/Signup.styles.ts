@@ -259,6 +259,91 @@ export const InputIcon = styled.span`
 export const MobileContainer = styled.div`
   position: relative;
   display: flex;
+  align-items: center;
+  gap: 0;
+`;
+
+export const CountryCodeButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 1rem;
+  border-radius: 0.5rem 0 0 0.5rem;
+  border: 1px solid #d1d5db;
+  // border-right: 0;
+  background-color: #f9fafb;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-width: 50px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: white;
+    border-color: #9ca3af;
+  }
+  
+  &:focus {
+    outline: none;
+    background-color: white;
+    border-color: #506ef7;
+    box-shadow: 0 0 0 2px rgba(80, 110, 247, 0.2);
+  }
+`;
+
+export const CountryCodeDropdown = styled.div<{ isOpen: boolean }>`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.25rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  max-height: 300px;
+  overflow-y: auto;
+  width: 100px;
+  display: ${props => props.isOpen ? 'block' : 'none'};
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+    
+    &:hover {
+      background: #9ca3af;
+    }
+  }
+`;
+
+export const CountryCodeOption = styled.button`
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: none;
+  color: #6b7280;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: #f3f4f6;
+    color: #506ef7;
+  }
+  
+  &:active {
+    background-color: rgba(80, 110, 247, 0.1);
+  }
 `;
 
 export const CountryCode = styled.span`
@@ -276,6 +361,8 @@ export const CountryCode = styled.span`
 export const MobileInput = styled(FormInput)`
   border-radius: 0 0.5rem 0.5rem 0;
   padding-right: 1rem;
+  padding-top:0.9rem;
+  flex: 1;
 `;
 
 export const PasswordContainer = styled.div`

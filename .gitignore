@@ -18,3 +18,8 @@ coverage/
 .turbo/
 .husky/
 !
+.env.development
+.env.production
+package-lock.json
+yarn.lock
+

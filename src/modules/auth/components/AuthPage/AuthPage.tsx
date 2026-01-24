@@ -4,7 +4,6 @@ import {
   emailSignup,
   emailLogin,
   confirmEmail,
-  completeProfile,
   forgotPassword,
   resetPassword,
   resendEmailConfirmation,
@@ -20,6 +19,7 @@ import { ResetPassword } from '../ResetPassword';
 export const AuthPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const [currentStep, setCurrentStep] = useState<AuthStep>('login');
+  // const [currentStep, setCurrentStep] = useState<AuthStep>('profile-setup');
   const [tempData, setTempData] = useState<{
     email?: string;
     signupData?: any;
@@ -53,22 +53,28 @@ export const AuthPage: React.FC = () => {
     role: UserRole;
   }) => {
     try {
+      console.log('[AuthPage] handleSignup called with:', data);
       const [firstName, lastName] = data.fullName.split(' ');
-      await dispatch(emailSignup({
+      const signupPayload = {
         email: data.email,
         password: data.password,
         firstName: firstName || '',
         lastName: lastName || '',
         roleId: data.role||'student',
-      }) as any);
+      };
+      console.log('[AuthPage] Dispatching emailSignup with:', signupPayload);
+      
+      const result = await dispatch(emailSignup(signupPayload) as any);
+      console.log('[AuthPage] emailSignup completed, result:', result);
       
       // Store signup data and navigate to OTP verification
       navigateToStep('verify-otp', { 
-        email: data.email, 
+        email: data.email,
         signupData: data, 
         otpSource: 'signup' 
       });
     } catch (error) {
+      console.error('[AuthPage] handleSignup error:', error);
       // Error is already handled by the action with toast
       // Don't rethrow to prevent page reload
     }
@@ -102,27 +108,8 @@ export const AuthPage: React.FC = () => {
     preferences: string[];
   }) => {
     try {
-      const signupData = tempData.signupData;
-      const [firstName, lastName] = (signupData?.fullName || '').split(' ');
-      
-      await dispatch(completeProfile({
-        firstName: firstName || '',
-        lastName: lastName || '',
-        email: signupData?.email || tempData.email || '',
-        phone: signupData?.mobile || '',
-        roleId: signupData?.role || 'student',
-        status: 'active',
-        preferences: {
-          language: 'en',
-          ttsEnabled: false,
-        },
-        notificationPrefs: {
-          email: true,
-          push: true,
-        },
-      }) as any);
-      
-      // Profile setup completed - user should now be authenticated
+      // Profile setup is now handled directly in ProfileSetup component
+      // which calls setupProfile action
     } catch (error) {
       // Error is already handled by the action with toast
       // Don't rethrow to prevent page reload
