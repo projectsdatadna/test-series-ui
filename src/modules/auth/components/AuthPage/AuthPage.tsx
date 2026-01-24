@@ -6,8 +6,7 @@ import {
   confirmEmail,
   completeProfile,
   forgotPassword,
-  verifyForgotPasswordOTP,
-  confirmForgotPassword,
+  resetPassword,
   resendEmailConfirmation,
 } from '../../actions';
 import type { AuthStep, UserRole } from '../../types';
@@ -77,10 +76,7 @@ export const AuthPage: React.FC = () => {
 
   const handleVerifyOTP = async (otp: string) => {
     try {
-      const otpSource = tempData.otpSource || 'signup';
       
-      if (otpSource === 'signup') {
-        // Handle signup OTP verification
         await dispatch(confirmEmail({
           email: tempData.email || '',
           confirmationCode: otp,
@@ -91,19 +87,7 @@ export const AuthPage: React.FC = () => {
         
         // Navigate to profile setup
         navigateToStep('profile-setup');
-      } else {
-        // Handle forgot password OTP verification
-        await dispatch(verifyForgotPasswordOTP({
-          email: tempData.email || '',
-          confirmationCode: otp,
-        }) as any);
-        
-        // Store the OTP for password reset
-        setTempData(prev => ({ ...prev, otpCode: otp }));
-        
-        // Navigate to reset password
-        navigateToStep('reset-password');
-      }
+      
     } catch (error) {
       // Error is already handled by the action with toast
       // Don't rethrow to prevent page reload
@@ -148,8 +132,8 @@ export const AuthPage: React.FC = () => {
   const handleForgotPassword = async (emailOrMobile: string) => {
     try {
       await dispatch(forgotPassword({ email: emailOrMobile }) as any);
-      // Navigate to OTP verification for password reset
-      navigateToStep('verify-otp', { 
+      // Navigate directly to reset password screen after successful OTP send
+      navigateToStep('reset-password', { 
         email: emailOrMobile, 
         otpSource: 'forgot-password' 
       });
@@ -159,12 +143,9 @@ export const AuthPage: React.FC = () => {
     }
   };
 
-  const handleResetPassword = async (newPassword: string, _confirmPassword: string) => {
+  const handleResetPassword = async (newPassword: string, _confirmPassword: string, otp: string) => {
     try {
-      // Get the OTP from the verification step
-      const otp = tempData.otpCode || '';
-      
-      await dispatch(confirmForgotPassword({
+      await dispatch(resetPassword({
         email: tempData.email || '',
         newPassword,
         confirmationCode: otp,
@@ -252,6 +233,7 @@ export const AuthPage: React.FC = () => {
           <ResetPassword
             onResetPassword={handleResetPassword}
             onBackToLogin={() => navigateToStep('login')}
+            onResendOTP={handleResendOTP}
           />
         );
 

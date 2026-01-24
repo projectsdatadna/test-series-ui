@@ -628,64 +628,6 @@ export const logoutUser = () => {
   };
 };
 
-// 7. Forgot Password OTP Verification
-export const verifyForgotPasswordOTP = (verifyData: ForgotPasswordVerifyOTPRequest) => {
-  return async (dispatch: any) => {
-    try {
-      dispatch(forgotPasswordVerifyOTPRequest(verifyData));
-      
-      const response = await api.post<ForgotPasswordVerifyOTPResponse>('/auth/forgot/email/verify-otp', verifyData);
-      
-      dispatch(forgotPasswordVerifyOTPSuccess(response));
-      
-      // Show success toast
-      toast.success('OTP verified successfully! You can now set your new password.');
-      
-      // Navigate to reset password step
-      dispatch(setStep('reset-password'));
-      
-      return response;
-    } catch (error: any) {
-      const errorMessage = error.message || 'OTP verification failed';
-      dispatch(forgotPasswordVerifyOTPFailure(errorMessage));
-      
-      // Show error toast
-      toast.error(errorMessage);
-      
-      throw error;
-    }
-  };
-};
-
-// 8. Forgot Password Confirm New Password
-export const confirmForgotPassword = (confirmData: ForgotPasswordConfirmPasswordRequest) => {
-  return async (dispatch: any) => {
-    try {
-      dispatch(forgotPasswordConfirmPasswordRequest(confirmData));
-      
-      const response = await api.post<ForgotPasswordConfirmPasswordResponse>('/auth/forgot/email/confirm-password', confirmData);
-      
-      dispatch(forgotPasswordConfirmPasswordSuccess(response));
-      
-      // Show success toast
-      toast.success('Password reset successfully! You can now login with your new password.');
-      
-      // Navigate back to login step
-      dispatch(setStep('login'));
-      
-      return response;
-    } catch (error: any) {
-      const errorMessage = error.message || 'Password reset failed';
-      dispatch(forgotPasswordConfirmPasswordFailure(errorMessage));
-      
-      // Show error toast
-      toast.error(errorMessage);
-      
-      throw error;
-    }
-  };
-};
-
 // 9. Resend Email Confirmation Code
 export const resendEmailConfirmation = (resendData: ResendEmailConfirmationRequest) => {
   return async (dispatch: any) => {

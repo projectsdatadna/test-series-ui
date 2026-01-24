@@ -2,7 +2,7 @@
 
 # Configuration
 BUCKET_NAME="test-series-ui"
-REGION="us-east-1"
+REGION="ap-south-1"
 
 echo "🏗️  Building application..."
 yarn build

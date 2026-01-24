@@ -1,55 +1,38 @@
-import React, { useState } from 'react';
-import { EyeIcon, EyeSlashIcon, ArrowLeftIcon, LockClosedIcon } from '@heroicons/react/24/outline';
-import {
-  Container,
-  Header,
-  LogoContainer,
-  LogoIcon,
-  LogoText,
-  HeaderActions,
-  HelpButton,
-  LoginButton,
-  Main,
-  FormContainer,
-  FormContent,
-  HeaderSection,
-  Title,
-  Description,
-  Form,
-  FormGroup,
-  FormLabel,
-  InputContainer,
-  FormInput,
-  PasswordInputContainer,
-  PasswordInput,
-  PasswordToggle,
-  StrengthMeter,
-  StrengthHeader,
-  StrengthTitle,
-  StrengthPercentage,
-  StrengthBar,
-  StrengthFill,
-  StrengthHint,
-  SubmitButton,
-  SecondaryAction,
-  BackLink,
-  Footer,
-} from './ResetPassword.styles';
+import React, { useState, useRef, useEffect } from 'react';
+import { EyeIcon, EyeSlashIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { BackLink, Container, Description, Divider, Footer, Form, FormContainer, FormContent, FormGroup, FormLabel, Header, HeaderActions, HeaderSection, HelpButton, LoginButton, LogoContainer, LogoIcon, LogoText, Main, OTPContainer, OTPInput, PasswordInput, PasswordInputContainer, PasswordToggleButton, ResendButton, SecondaryAction, StrengthBar, StrengthFill, StrengthHeader, StrengthHint, StrengthMeter, StrengthPercentage, StrengthTitle, SubmitButton, TimerSection, TimerText, Title } from './ResetPassword.styles';
+
 
 interface ResetPasswordProps {
-  onResetPassword: (newPassword: string, confirmPassword: string) => void;
+  onResetPassword: (newPassword: string, confirmPassword: string, otp: string) => void;
   onBackToLogin: () => void;
+  onResendOTP?: () => void;
 }
 
 export const ResetPassword: React.FC<ResetPasswordProps> = ({ 
   onResetPassword, 
-  onBackToLogin 
+  onBackToLogin,
+  onResendOTP,
 }) => {
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [formData, setFormData] = useState({
-    newPassword: 'SecurePass123!',
+    newPassword: '',
     confirmPassword: '',
   });
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(115); // 1:55
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
 
   const getPasswordStrength = (password: string) => {
     let strength = 0;
@@ -63,16 +46,47 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
   const passwordStrength = getPasswordStrength(formData.newPassword);
   const strengthLabel = passwordStrength >= 75 ? 'Strong' : passwordStrength >= 50 ? 'Medium' : passwordStrength >= 25 ? 'Fair' : 'Weak';
 
+  const handleOTPChange = (index: number, value: string) => {
+    if (value.length > 1) return;
+    
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOTPKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (formData.newPassword && formData.confirmPassword) {
+    const otpString = otp.join('');
+    if (formData.newPassword && formData.confirmPassword && otpString.length === 6) {
       try {
-        await onResetPassword(formData.newPassword, formData.confirmPassword);
+        await onResetPassword(formData.newPassword, formData.confirmPassword, otpString);
       } catch (error) {
         // Error is already handled by the action with toast
       }
+    }
+  };
+
+  const handleResend = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (timeLeft === 0 && onResendOTP) {
+      onResendOTP();
+      setTimeLeft(115);
     }
   };
 
@@ -102,10 +116,50 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
           <FormContent>
             <HeaderSection>
               <Title>Reset Your Password</Title>
-              <Description>Enter a new, strong password to secure your account.</Description>
+              <Description>Verify your identity and set a new password.</Description>
             </HeaderSection>
 
             <Form onSubmit={handleSubmit}>
+              <FormGroup>
+                <FormLabel>Verification Code</FormLabel>
+                <OTPContainer>
+                  {otp.map((digit, index) => (
+                    <OTPInput
+                      key={index}
+                      ref={(el) => {
+                        inputRefs.current[index] = el;
+                      }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOTPChange(index, e.target.value)}
+                      onKeyDown={(e) => handleOTPKeyDown(index, e)}
+                      autoFocus={index === 0}
+                    />
+                  ))}
+                </OTPContainer>
+                <TimerSection>
+                  <TimerText>
+                    Didn't receive the code?
+                  </TimerText>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ color: '#111318', fontWeight: 'bold' }}>
+                      {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+                    </span>
+                    <ResendButton 
+                      type="button"
+                      disabled={timeLeft > 0}
+                      onClick={handleResend}
+                    >
+                      Resend Code
+                    </ResendButton>
+                  </div>
+                </TimerSection>
+              </FormGroup>
+
+              <Divider />
+
               <FormGroup>
                 <FormLabel>New Password</FormLabel>
                 <PasswordInputContainer>
@@ -116,7 +170,8 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
                     onChange={(e) => handleInputChange('newPassword', e.target.value)}
                     required
                   />
-                  <PasswordToggle
+                  <PasswordToggleButton
+                    type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
                   >
                     {showNewPassword ? (
@@ -124,7 +179,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
                     ) : (
                       <EyeIcon className="w-5 h-5" />
                     )}
-                  </PasswordToggle>
+                  </PasswordToggleButton>
                 </PasswordInputContainer>
               </FormGroup>
 
@@ -145,23 +200,21 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
 
               <FormGroup>
                 <FormLabel>Confirm New Password</FormLabel>
-                <InputContainer>
-                  <FormInput
+                <PasswordInputContainer>
+                  <PasswordInput
                     type="password"
                     placeholder="Re-enter password"
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                     required
                   />
-                </InputContainer>
+                </PasswordInputContainer>
               </FormGroup>
 
-              <div style={{ paddingTop: '1rem' }}>
-                <SubmitButton type="submit">
-                  <span>Update Password</span>
-                  <LockClosedIcon className="w-4 h-4" />
-                </SubmitButton>
-              </div>
+              <SubmitButton type="submit">
+                <span>Update Password</span>
+                <span style={{ fontSize: '1.125rem' }}>🔐</span>
+              </SubmitButton>
 
               <SecondaryAction>
                 <BackLink href="#" onClick={(e) => { e.preventDefault(); onBackToLogin(); }}>

@@ -7,7 +7,7 @@ import prettierConfig from 'eslint-config-prettier'
 
 export default [
   {
-    ignores: ['dist', 'node_modules', 'build', 'coverage'],
+    ignores: ['dist', 'node_modules', 'build', 'coverage', '.eslintignore'],
   },
   {
     files: ['**/*.{ts,tsx}'],
@@ -15,18 +15,22 @@ export default [
       ecmaVersion: 2020,
       sourceType: 'module',
       globals: globals.browser,
+      parser: tseslint.parser,
       parserOptions: {
         ecmaFeatures: {
           jsx: true,
         },
+        projectService: true,
       },
     },
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      '@typescript-eslint': tseslint.plugin,
     },
     rules: {
       ...js.configs.recommended.rules,
+      ...tseslint.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       ...reactRefresh.configs.vite.rules,
       'react-refresh/only-export-components': 'warn',
@@ -44,12 +48,6 @@ export default [
         },
       ],
     },
-  },
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      ...tseslint.configs.recommended,
-    ],
   },
   prettierConfig,
 ]
