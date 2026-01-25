@@ -2,15 +2,17 @@
  * Navbar Module Reducer
  */
 
-import type { NavbarState } from './types';
+import type { NavbarState, PageId } from './types';
 import type { AnyAction } from 'redux';
 
 export const NAVBAR_TOGGLE = 'navbar/TOGGLE';
 export const NAVBAR_OPEN = 'navbar/OPEN';
 export const NAVBAR_CLOSE = 'navbar/CLOSE';
+export const NAVBAR_SET_CURRENT_PAGE = 'navbar/SET_CURRENT_PAGE';
 
 const initialState: NavbarState = {
   isOpen: true,
+  currentPage: 'dashboard',
 };
 
 export const navbarReducer = (
@@ -34,6 +36,12 @@ export const navbarReducer = (
       return {
         ...state,
         isOpen: false,
+      };
+
+    case NAVBAR_SET_CURRENT_PAGE:
+      return {
+        ...state,
+        currentPage: action.payload as PageId,
       };
 
     default:

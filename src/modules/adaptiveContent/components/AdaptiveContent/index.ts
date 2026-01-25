@@ -1,0 +1,1 @@
+export { AdaptiveContent } from './AdaptiveContent';

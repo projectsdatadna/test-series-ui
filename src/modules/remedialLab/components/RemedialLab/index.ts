@@ -1,0 +1,1 @@
+export { RemedialLab } from './RemedialLab';

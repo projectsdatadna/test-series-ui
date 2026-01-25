@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import authSelector from '../../../auth/selectors';
+import navbarSelector from '../../selectors';
 import type { UserRole } from '../../../auth/types';
+import type { PageId } from '../../types';
 import { logoutUser } from '../../../auth/actions';
+import { setCurrentPage } from '../../actions';
 import {
   HeaderContainer,
   LeftSection,
@@ -37,51 +40,60 @@ interface NavbarProps {
   isOpen: boolean;
 }
 
-const NAV_ITEMS: Record<UserRole, Array<{ label: string; icon: string; href: string }>> = {
+interface NavItemConfig {
+  label: string;
+  icon: string;
+  href: string;
+  pageId: PageId;
+}
+
+const NAV_ITEMS: Record<UserRole, NavItemConfig[]> = {
   admin: [
-    { label: 'Dashboard', icon: 'dashboard', href: '#' },
-    { label: 'Classes', icon: 'school', href: '#' },
-    { label: 'Question Bank', icon: 'quiz', href: '#' },
-    { label: 'Assessment Builder', icon: 'construction', href: '#' },
-    { label: 'Test Library', icon: 'library_books', href: '#' },
-    { label: 'Revision Kit', icon: 'inventory_2', href: '#' },
-    { label: 'Remedial Lab', icon: 'science', href: '#' },
-    { label: 'Students', icon: 'group', href: '#' },
-    { label: 'Reports', icon: 'description', href: '#' },
-    { label: 'Analytics', icon: 'monitoring', href: '#' },
-    { label: 'Settings', icon: 'settings', href: '#' },
-    { label: 'Support', icon: 'support_agent', href: '#' },
+    { label: 'Dashboard', icon: 'dashboard', href: '#', pageId: 'dashboard' },
+    { label: 'Classes', icon: 'school', href: '#', pageId: 'classes' },
+    { label: 'Question Bank', icon: 'quiz', href: '#', pageId: 'question-bank' },
+    { label: 'Assessment Builder', icon: 'construction', href: '#', pageId: 'assessment-builder' },
+    { label: 'Test Library', icon: 'library_books', href: '#', pageId: 'test-library' },
+    { label: 'Revision Kit', icon: 'inventory_2', href: '#', pageId: 'revision-kit' },
+    { label: 'Remedial Lab', icon: 'science', href: '#', pageId: 'remedial-lab' },
+    { label: 'Adaptive Content', icon: 'layers', href: '#', pageId: 'adaptive-content' },
+    { label: 'Students', icon: 'group', href: '#', pageId: 'students' },
+    { label: 'Reports', icon: 'description', href: '#', pageId: 'reports' },
+    { label: 'Analytics', icon: 'monitoring', href: '#', pageId: 'analytics' },
+    { label: 'Settings', icon: 'settings', href: '#', pageId: 'settings' },
+    { label: 'Support', icon: 'support_agent', href: '#', pageId: 'support' },
   ],
   teacher: [
-    { label: 'Dashboard', icon: 'dashboard', href: '#' },
-    { label: 'Classes', icon: 'groups', href: '#' },
-    { label: 'Question Bank', icon: 'database', href: '#' },
-    { label: 'Assessment Builder', icon: 'construction', href: '#' },
-    { label: 'Test Library', icon: 'library_books', href: '#' },
-    { label: 'Revision Kit', icon: 'inventory_2', href: '#' },
-    { label: 'Remedial Lab', icon: 'healing', href: '#' },
-    { label: 'Students', icon: 'person', href: '#' },
-    { label: 'Reports', icon: 'description', href: '#' },
-    { label: 'Analytics', icon: 'bar_chart', href: '#' },
+    { label: 'Dashboard', icon: 'dashboard', href: '#', pageId: 'dashboard' },
+    { label: 'Classes', icon: 'groups', href: '#', pageId: 'classes' },
+    { label: 'Question Bank', icon: 'database', href: '#', pageId: 'question-bank' },
+    { label: 'Assessment Builder', icon: 'construction', href: '#', pageId: 'assessment-builder' },
+    { label: 'Test Library', icon: 'library_books', href: '#', pageId: 'test-library' },
+    { label: 'Revision Kit', icon: 'inventory_2', href: '#', pageId: 'revision-kit' },
+    { label: 'Remedial Lab', icon: 'healing', href: '#', pageId: 'remedial-lab' },
+    { label: 'Adaptive Content', icon: 'layers', href: '#', pageId: 'adaptive-content' },
+    { label: 'Students', icon: 'person', href: '#', pageId: 'students' },
+    { label: 'Reports', icon: 'description', href: '#', pageId: 'reports' },
+    { label: 'Analytics', icon: 'bar_chart', href: '#', pageId: 'analytics' },
   ],
   student: [
-    { label: 'Dashboard', icon: 'dashboard', href: '#' },
-    { label: 'My Courses', icon: 'school', href: '#' },
-    { label: 'Active Tests', icon: 'assignment', href: '#' },
-    { label: 'Past Results', icon: 'history_edu', href: '#' },
-    { label: 'AI Learning Path', icon: 'auto_fix_high', href: '#' },
-    { label: 'Revision Kit', icon: 'inventory_2', href: '#' },
-    { label: 'Practice Lab', icon: 'psychology', href: '#' },
-    { label: 'Achievements', icon: 'military_tech', href: '#' },
-    { label: 'Performance Analytics', icon: 'bar_chart', href: '#' },
-    { label: 'Study Groups', icon: 'forum', href: '#' },
-    { label: 'Schedule', icon: 'event', href: '#' },
+    { label: 'Dashboard', icon: 'dashboard', href: '#', pageId: 'dashboard' },
+    { label: 'My Courses', icon: 'school', href: '#', pageId: 'my-courses' },
+    { label: 'Active Tests', icon: 'assignment', href: '#', pageId: 'active-tests' },
+    { label: 'Past Results', icon: 'history_edu', href: '#', pageId: 'past-results' },
+    { label: 'AI Learning Path', icon: 'auto_fix_high', href: '#', pageId: 'ai-learning-path' },
+    { label: 'Revision Kit', icon: 'inventory_2', href: '#', pageId: 'revision-kit' },
+    { label: 'Practice Lab', icon: 'psychology', href: '#', pageId: 'practice-lab' },
+    { label: 'Achievements', icon: 'military_tech', href: '#', pageId: 'achievements' },
+    { label: 'Performance Analytics', icon: 'bar_chart', href: '#', pageId: 'analytics' },
+    { label: 'Study Groups', icon: 'forum', href: '#', pageId: 'study-groups' },
+    { label: 'Schedule', icon: 'event', href: '#', pageId: 'schedule' },
   ],
   parent: [
-    { label: 'Dashboard', icon: 'dashboard', href: '#' },
-    { label: 'My Children', icon: 'family_restroom', href: '#' },
-    { label: 'Performance', icon: 'trending_up', href: '#' },
-    { label: 'Reports', icon: 'description', href: '#' },
+    { label: 'Dashboard', icon: 'dashboard', href: '#', pageId: 'dashboard' },
+    { label: 'My Children', icon: 'family_restroom', href: '#', pageId: 'my-children' },
+    { label: 'Performance', icon: 'trending_up', href: '#', pageId: 'performance' },
+    { label: 'Reports', icon: 'description', href: '#', pageId: 'reports' },
   ],
 };
 
@@ -92,8 +104,14 @@ export const Navbar: React.FC<NavbarProps> = ({ children, isOpen }) => {
 
   const user = useSelector(authSelector.getUser);
   const roleId = useSelector(authSelector.getUserRole) as UserRole | undefined;
+  const currentPage = useSelector(navbarSelector.getCurrentPage);
 
   const navItems = roleId && roleId in NAV_ITEMS ? NAV_ITEMS[roleId] : [];
+
+  const handleNavClick = (pageId: PageId, e: React.MouseEvent) => {
+    e.preventDefault();
+    dispatch(setCurrentPage(pageId) as any);
+  };
 
   const getRoleDisplayName = (role: UserRole): string => {
     const roleNames: Record<UserRole, string> = {
@@ -183,7 +201,12 @@ export const Navbar: React.FC<NavbarProps> = ({ children, isOpen }) => {
         <NavMenu>
           {navItems && navItems.length > 0 ? (
             navItems.map((item) => (
-              <NavLink key={item.label} href={item.href} isActive={item.label === 'Dashboard'}>
+              <NavLink
+                key={item.label}
+                href={item.href}
+                isActive={currentPage === item.pageId}
+                onClick={(e) => handleNavClick(item.pageId, e)}
+              >
                 <NavIcon>
                   <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>
                     {item.icon}
