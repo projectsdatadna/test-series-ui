@@ -7,9 +7,12 @@ export const HeaderContainer = styled.header`
   border-bottom: 1px solid #e5e7eb;
   background-color: #ffffff;
   padding: 0.75rem 1.5rem;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
+  height: 4rem;
 `;
 
 export const LeftSection = styled.div`
@@ -171,13 +174,19 @@ export const SidebarContainer = styled.aside<{ isOpen: boolean }>`
   padding: 1.5rem 1rem;
   overflow-y: auto;
   transition: transform 0.3s ease;
+  position: fixed;
+  left: 0;
+  top: 4rem;
+  height: calc(100vh - 4rem);
+  z-index: 40;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   @media (max-width: 768px) {
-    position: fixed;
-    left: 0;
-    top: 0;
-    height: 100vh;
-    z-index: 40;
     transform: translateX(${props => (props.isOpen ? '0' : '-100%')});
   }
 `;
@@ -234,17 +243,77 @@ export const MainContent = styled.main`
   flex: 1;
   overflow-y: auto;
   padding: 2rem;
+  margin-left: 16rem;
+  margin-top: 4rem;
+  height: calc(100vh - 4rem);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 
   &::-webkit-scrollbar {
-    width: 4px;
+    display: none;
   }
 
-  &::-webkit-scrollbar-track {
-    background: transparent;
+  @media (max-width: 768px) {
+    margin-left: 0;
+  }
+`;
+
+export const ProfileDropdownContainer = styled.div`
+  position: relative;
+`;
+
+export const ProfileDropdown = styled.div<{ isOpen: boolean }>`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  min-width: 12rem;
+  z-index: 100;
+  opacity: ${props => (props.isOpen ? 1 : 0)};
+  visibility: ${props => (props.isOpen ? 'visible' : 'hidden')};
+  transform: ${props => (props.isOpen ? 'translateY(0)' : 'translateY(-0.5rem)')};
+  transition: all 0.2s ease;
+`;
+
+export const DropdownItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: none;
+  color: #111218;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+
+  &:first-child {
+    border-radius: 0.75rem 0.75rem 0 0;
   }
 
-  &::-webkit-scrollbar-thumb {
-    background: #e2e8f0;
-    border-radius: 10px;
+  &:last-child {
+    border-radius: 0 0 0.75rem 0.75rem;
+  }
+
+  &:hover {
+    background-color: #f3f4f6;
+    color: #4f6ef7;
+  }
+
+  &.logout {
+    color: #dc2626;
+    border-top: 1px solid #e5e7eb;
+
+    &:hover {
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
   }
 `;

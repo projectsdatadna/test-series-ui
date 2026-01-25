@@ -7,6 +7,7 @@ import {
   forgotPassword,
   resetPassword,
   resendEmailConfirmation,
+  setAuthenticated,
 } from '../../actions';
 import type { AuthStep, UserRole } from '../../types';
 import { Login } from '../Login';
@@ -202,7 +203,8 @@ export const AuthPage: React.FC = () => {
           <ProfileSetup
             onComplete={handleProfileSetup}
             onSkip={() => {
-              // Profile setup skipped
+              // Mark user as authenticated and navigate to dashboard
+              dispatch(setAuthenticated(true) as any);
             }}
           />
         );

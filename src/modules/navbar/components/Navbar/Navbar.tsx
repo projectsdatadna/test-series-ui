@@ -1,7 +1,8 @@
-import React from 'react';
-import { useSelector } from 'react-redux';
+import React, { useState, useRef, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import authSelector from '../../../auth/selectors';
 import type { UserRole } from '../../../auth/types';
+import { logoutUser } from '../../../auth/actions';
 import {
   HeaderContainer,
   LeftSection,
@@ -26,8 +27,10 @@ import {
   NavIcon,
   NavFooter,
   MainContent,
+  ProfileDropdownContainer,
+  ProfileDropdown,
+  DropdownItem,
 } from './Navbar.styles';
-import { SparklesIcon } from '@heroicons/react/24/outline';
 
 interface NavbarProps {
   children: React.ReactNode;
@@ -83,14 +86,15 @@ const NAV_ITEMS: Record<UserRole, Array<{ label: string; icon: string; href: str
 };
 
 export const Navbar: React.FC<NavbarProps> = ({ children, isOpen }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dispatch = useDispatch();
+
   const user = useSelector(authSelector.getUser);
   const roleId = useSelector(authSelector.getUserRole) as UserRole | undefined;
-  console.log('[Navbar] roleId:', roleId);
-
 
   const navItems = roleId && roleId in NAV_ITEMS ? NAV_ITEMS[roleId] : [];
-  
-  console.log(navItems,'navitems')
+
   const getRoleDisplayName = (role: UserRole): string => {
     const roleNames: Record<UserRole, string> = {
       admin: 'Administrator',
@@ -101,8 +105,22 @@ export const Navbar: React.FC<NavbarProps> = ({ children, isOpen }) => {
     return roleNames[role];
   };
 
-  console.log('[Navbar] roleId:', roleId);
-  console.log('[Navbar] navItems:', navItems);
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    dispatch(logoutUser() as any);
+    setIsDropdownOpen(false);
+  };
 
   return (
     <>
@@ -129,59 +147,79 @@ export const Navbar: React.FC<NavbarProps> = ({ children, isOpen }) => {
             <span className="material-symbols-outlined">notifications</span>
           </IconButton>
           <Divider />
-          <UserSection>
-            <UserInfo>
-              <UserName>{user?.name || 'User'}</UserName>
-              <UserRoleText>{roleId ? getRoleDisplayName(roleId) : 'User'}</UserRoleText>
-            </UserInfo>
-            <UserAvatar style={{ backgroundImage: 'url(https://via.placeholder.com/40)' }} />
-          </UserSection>
-        </RightSection>
-      </HeaderContainer>
-
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <SidebarContainer isOpen={isOpen}>
-          <NavMenu>
-            {navItems && navItems.length > 0 ? (
-              navItems.map((item) => (
-                <NavLink key={item.label} href={item.href} isActive={item.label === 'Dashboard'}>
-                  <NavIcon>
-                    <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>
-                      {item.icon}
-                    </span>
-                  </NavIcon>
-                  {item.label}
-                </NavLink>
-              ))
-            ) : (
-              <div style={{ padding: '1rem', color: '#60688a', fontSize: '0.875rem' }}>
-                No menu items available
-              </div>
-            )}
-          </NavMenu>
-
-          <NavFooter>
-            <NavLink href="#" isActive={false}>
-              <NavIcon>
+          <ProfileDropdownContainer ref={dropdownRef}>
+            <UserSection onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
+              <UserInfo>
+                <UserName>{user?.name || 'User'}</UserName>
+                <UserRoleText>{roleId ? getRoleDisplayName(roleId) : 'User'}</UserRoleText>
+              </UserInfo>
+              <UserAvatar style={{ backgroundImage: 'url(https://via.placeholder.com/40)' }} />
+            </UserSection>
+            <ProfileDropdown isOpen={isDropdownOpen}>
+              <DropdownItem onClick={() => setIsDropdownOpen(false)}>
+                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>
+                  person
+                </span>
+                Profile
+              </DropdownItem>
+              <DropdownItem onClick={() => setIsDropdownOpen(false)}>
                 <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>
                   settings
                 </span>
-              </NavIcon>
-              Settings
-            </NavLink>
-            <NavLink href="#" isActive={false}>
-              <NavIcon>
+                Settings
+              </DropdownItem>
+              <DropdownItem className="logout" onClick={handleLogout}>
                 <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>
-                  contact_support
+                  logout
                 </span>
-              </NavIcon>
-              Support
-            </NavLink>
-          </NavFooter>
-        </SidebarContainer>
+                Logout
+              </DropdownItem>
+            </ProfileDropdown>
+          </ProfileDropdownContainer>
+        </RightSection>
+      </HeaderContainer>
 
-        <MainContent>{children}</MainContent>
-      </div>
+      <SidebarContainer isOpen={isOpen}>
+        <NavMenu>
+          {navItems && navItems.length > 0 ? (
+            navItems.map((item) => (
+              <NavLink key={item.label} href={item.href} isActive={item.label === 'Dashboard'}>
+                <NavIcon>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>
+                    {item.icon}
+                  </span>
+                </NavIcon>
+                {item.label}
+              </NavLink>
+            ))
+          ) : (
+            <div style={{ padding: '1rem', color: '#60688a', fontSize: '0.875rem' }}>
+              No menu items available
+            </div>
+          )}
+        </NavMenu>
+
+        <NavFooter>
+          <NavLink href="#" isActive={false}>
+            <NavIcon>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>
+                settings
+              </span>
+            </NavIcon>
+            Settings
+          </NavLink>
+          <NavLink href="#" isActive={false}>
+            <NavIcon>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>
+                contact_support
+              </span>
+            </NavIcon>
+            Support
+          </NavLink>
+        </NavFooter>
+      </SidebarContainer>
+
+      <MainContent>{children}</MainContent>
     </>
   );
 };
