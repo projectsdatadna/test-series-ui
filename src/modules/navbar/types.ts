@@ -14,6 +14,7 @@ export type PageId =
   | 'revision-kit'
   | 'remedial-lab'
   | 'adaptive-content'
+  | 'content-builder'
   | 'students'
   | 'reports'
   | 'analytics'

@@ -11,6 +11,7 @@ import { StudentDashboard } from './modules/studentDashboard/components/StudentD
 import { AssessmentBuilder } from './modules/assessmentBuilder/components/AssessmentBuilder';
 import { RemedialLab } from './modules/remedialLab/components/RemedialLab';
 import { AdaptiveContent } from './modules/adaptiveContent/components/AdaptiveContent';
+import { ContentBuilder } from './modules/adaptiveContent/components/ContentBuilder';
 import { AssessmentConfigurator } from './modules/assessmentConfigurator/components/AssessmentConfigurator';
 import { setRoleId, loginSuccess } from './modules/auth/actions';
 import { storageManager } from './utils/storage';
@@ -61,6 +62,8 @@ const App: React.FC = () => {
           return <RemedialLab />;
         case 'adaptive-content':
           return <AdaptiveContent />;
+        case 'content-builder':
+          return <ContentBuilder />;
         default:
           break;
       }

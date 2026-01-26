@@ -1,6 +1,7 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import adaptiveContentSelector from '../../selectors';
+import { setCurrentPage } from '../../../navbar/actions';
 import {
   Container,
   Header,
@@ -32,9 +33,14 @@ import {
 } from './AdaptiveContent.styles';
 
 export const AdaptiveContent: React.FC = () => {
+  const dispatch = useDispatch();
   const contentTypes = useSelector(adaptiveContentSelector.getContentTypes);
   const aiCredits = useSelector(adaptiveContentSelector.getAICredits);
   const recentlyGenerated = useSelector(adaptiveContentSelector.getRecentlyGenerated);
+
+  const handleAIGenerate = () => {
+    dispatch(setCurrentPage('content-builder') as any);
+  };
 
   return (
     <Container>
@@ -60,7 +66,7 @@ export const AdaptiveContent: React.FC = () => {
                 <CardDescription>{contentType.description}</CardDescription>
               </CardTextContent>
               <CardActions>
-                <PrimaryButton>
+                <PrimaryButton onClick={handleAIGenerate}>
                   <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>
                     auto_awesome
                   </span>
