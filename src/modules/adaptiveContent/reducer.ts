@@ -10,6 +10,40 @@ export const ADAPTIVE_CONTENT_LOAD_SUCCESS = 'adaptiveContent/LOAD_SUCCESS';
 export const ADAPTIVE_CONTENT_LOAD_FAILURE = 'adaptiveContent/LOAD_FAILURE';
 export const ADAPTIVE_CONTENT_UPDATE_CREDITS = 'adaptiveContent/UPDATE_CREDITS';
 
+export const CONTENT_BUILDER_ADD_UPLOADED_FILE = 'contentBuilder/ADD_UPLOADED_FILE';
+export const CONTENT_BUILDER_UPDATE_FILE_UPLOAD_STATUS = 'contentBuilder/UPDATE_FILE_UPLOAD_STATUS';
+export const CONTENT_BUILDER_REMOVE_UPLOADED_FILE = 'contentBuilder/REMOVE_UPLOADED_FILE';
+export const CONTENT_BUILDER_SET_FILE_UPLOADING = 'contentBuilder/SET_FILE_UPLOADING';
+export const CONTENT_BUILDER_SET_UPLOAD_ERROR = 'contentBuilder/SET_UPLOAD_ERROR';
+export const CONTENT_BUILDER_SET_GENERATING = 'contentBuilder/SET_GENERATING';
+export const CONTENT_BUILDER_SET_GENERATED_CONTENT = 'contentBuilder/SET_GENERATED_CONTENT';
+export const CONTENT_BUILDER_SET_GENERATION_ERROR = 'contentBuilder/SET_GENERATION_ERROR';
+export const CONTENT_BUILDER_UPDATE_CUSTOMIZATION = 'contentBuilder/UPDATE_CUSTOMIZATION';
+export const CONTENT_BUILDER_SET_SAVING = 'contentBuilder/SET_SAVING';
+export const CONTENT_BUILDER_SET_SAVE_ERROR = 'contentBuilder/SET_SAVE_ERROR';
+export const CONTENT_BUILDER_SET_SELECTED_FILE = 'contentBuilder/SET_SELECTED_FILE';
+export const CONTENT_BUILDER_SET_SELECTED_CONTENT_TYPE = 'contentBuilder/SET_SELECTED_CONTENT_TYPE';
+export const CONTENT_BUILDER_CLEAR_ALL = 'contentBuilder/CLEAR_ALL';
+
+const initialContentBuilderState = {
+  uploadedFiles: [],
+  isUploading: false,
+  uploadError: null,
+  isGenerating: false,
+  generatedContent: null,
+  generationError: null,
+  customizationSettings: {
+    contentDepth: 'intermediate' as const,
+    formatStyle: 'bullet-points' as const,
+    visualStyle: 'academic' as const,
+    outputLanguage: 'english' as const,
+  },
+  isSaving: false,
+  saveError: null,
+  selectedFileId: null,
+  selectedContentTypeId: null,
+};
+
 const initialState: AdaptiveContentState = {
   loading: false,
   error: null,
@@ -62,6 +96,7 @@ const initialState: AdaptiveContentState = {
   ],
   aiCredits: 128,
   recentlyGenerated: 14,
+  contentBuilder: initialContentBuilderState,
 };
 
 export const adaptiveContentReducer = (
@@ -94,6 +129,161 @@ export const adaptiveContentReducer = (
       return {
         ...state,
         aiCredits: action.payload,
+      };
+
+    case CONTENT_BUILDER_ADD_UPLOADED_FILE:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          uploadedFiles: state.contentBuilder.uploadedFiles.some(
+            (f) => f.fileName === action.payload.fileName
+          )
+            ? state.contentBuilder.uploadedFiles.map((f) =>
+                f.fileName === action.payload.fileName ? action.payload : f
+              )
+            : [...state.contentBuilder.uploadedFiles, action.payload],
+          uploadError: null,
+          selectedFileId: action.payload.fileId || null,
+        },
+      };
+
+    case CONTENT_BUILDER_UPDATE_FILE_UPLOAD_STATUS:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          uploadedFiles: state.contentBuilder.uploadedFiles.map((f) =>
+            f.fileName === action.payload.fileName
+              ? {
+                  ...f,
+                  uploadProgress: action.payload.uploadProgress,
+                  isUploading: action.payload.isUploading,
+                  fileId: action.payload.fileId || f.fileId,
+                }
+              : f
+          ),
+          selectedFileId: action.payload.fileId || state.contentBuilder.selectedFileId,
+        },
+      };
+
+    case CONTENT_BUILDER_REMOVE_UPLOADED_FILE:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          uploadedFiles: state.contentBuilder.uploadedFiles.filter(
+            (f) => f.fileId !== action.payload
+          ),
+          selectedFileId:
+            state.contentBuilder.selectedFileId === action.payload
+              ? state.contentBuilder.uploadedFiles[0]?.fileId || null
+              : state.contentBuilder.selectedFileId,
+        },
+      };
+
+    case CONTENT_BUILDER_SET_FILE_UPLOADING:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          isUploading: action.payload,
+        },
+      };
+
+    case CONTENT_BUILDER_SET_UPLOAD_ERROR:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          uploadError: action.payload,
+          isUploading: false,
+        },
+      };
+
+    case CONTENT_BUILDER_SET_GENERATING:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          isGenerating: action.payload,
+        },
+      };
+
+    case CONTENT_BUILDER_SET_GENERATED_CONTENT:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          generatedContent: action.payload,
+          generationError: null,
+          isGenerating: false,
+        },
+      };
+
+    case CONTENT_BUILDER_SET_GENERATION_ERROR:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          generationError: action.payload,
+          isGenerating: false,
+        },
+      };
+
+    case CONTENT_BUILDER_UPDATE_CUSTOMIZATION:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          customizationSettings: {
+            ...state.contentBuilder.customizationSettings,
+            ...action.payload,
+          },
+        },
+      };
+
+    case CONTENT_BUILDER_SET_SAVING:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          isSaving: action.payload,
+        },
+      };
+
+    case CONTENT_BUILDER_SET_SAVE_ERROR:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          saveError: action.payload,
+          isSaving: false,
+        },
+      };
+
+    case CONTENT_BUILDER_SET_SELECTED_FILE:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          selectedFileId: action.payload,
+        },
+      };
+
+    case CONTENT_BUILDER_SET_SELECTED_CONTENT_TYPE:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          selectedContentTypeId: action.payload,
+        },
+      };
+
+    case CONTENT_BUILDER_CLEAR_ALL:
+      return {
+        ...state,
+        contentBuilder: initialContentBuilderState,
       };
 
     default:

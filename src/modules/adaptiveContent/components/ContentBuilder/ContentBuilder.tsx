@@ -1,6 +1,21 @@
-import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import React, { useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentPage } from '../../../navbar/actions';
+import adaptiveContentSelector from '../../selectors';
+import {
+  contentBuilderAddUploadedFile,
+  contentBuilderUpdateFileUploadStatus,
+  contentBuilderRemoveUploadedFile,
+  contentBuilderSetFileUploading,
+  contentBuilderSetUploadError,
+  contentBuilderSetGenerating,
+  contentBuilderSetGeneratedContent,
+  contentBuilderSetGenerationError,
+  contentBuilderUpdateCustomization,
+  contentBuilderSetSelectedFile,
+} from '../../actions';
+import { generateAdaptiveContent, uploadFilesToContentBuilder } from '../../services/contentBuilderService';
+import toast from 'react-hot-toast';
 import {
   Container,
   LeftPanel,
@@ -11,11 +26,6 @@ import {
   Select,
   SectionList,
   SectionItem,
-  PdfPreview,
-  PdfPreviewContent,
-  PdfPlaceholderLine,
-  PdfImagePlaceholder,
-  PdfCaption,
   CenterPanel,
   CanvasContainer,
   CanvasHeader,
@@ -33,8 +43,6 @@ import {
   AddContentText,
   AddContentTitle,
   AddContentSubtitle,
-  AddContentButtons,
-  AddContentButton,
   RightPanel,
   SettingsSection,
   SettingsLabel,
@@ -64,19 +72,305 @@ import {
   SaveButton,
 } from './ContentBuilder.styles';
 
-type ContentDepth = 'beginner' | 'intermediate' | 'advanced';
-type FormatStyle = 'bullet' | 'grid';
-type Language = 'english' | 'hindi' | 'spanish';
-
 export const ContentBuilder: React.FC = () => {
   const dispatch = useDispatch();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedSection, setSelectedSection] = useState('4.1');
-  const [contentDepth, setContentDepth] = useState<ContentDepth>('intermediate');
-  const [formatStyle, setFormatStyle] = useState<FormatStyle>('bullet');
-  const [language, setLanguage] = useState<Language>('english');
+
+  // Redux selectors
+  const uploadedFiles = useSelector(adaptiveContentSelector.getUploadedFiles);
+  const isUploading = useSelector(adaptiveContentSelector.getIsUploading);
+  const uploadError = useSelector(adaptiveContentSelector.getUploadError);
+  const isGenerating = useSelector(adaptiveContentSelector.getIsGenerating);
+  const generatedContent = useSelector(adaptiveContentSelector.getGeneratedContent);
+  const generationError = useSelector(adaptiveContentSelector.getGenerationError);
+  const customizationSettings = useSelector(adaptiveContentSelector.getCustomizationSettings);
+  const isSaving = useSelector(adaptiveContentSelector.getIsSaving);
+  const selectedFileId = useSelector(adaptiveContentSelector.getSelectedFileId);
+  const selectedFile = useSelector(adaptiveContentSelector.getSelectedFile);
+  const selectedContentTypeId = useSelector(adaptiveContentSelector.getSelectedContentTypeId);
+
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
 
   const handleBackToAdaptiveContent = () => {
     dispatch(setCurrentPage('adaptive-content') as any);
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.currentTarget.files;
+    if (!files || files.length === 0) return;
+
+    const filesToUpload: File[] = [];
+
+    // Validate all files first
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+
+      if (file.type !== 'application/pdf') {
+        toast.error(`${file.name}: Only PDF files are allowed`);
+        dispatch(contentBuilderSetUploadError('Only PDF files are allowed'));
+        continue;
+      }
+
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error(`${file.name}: File size must be less than 50MB`);
+        dispatch(contentBuilderSetUploadError('File size must be less than 50MB'));
+        continue;
+      }
+
+      filesToUpload.push(file);
+    }
+
+    if (filesToUpload.length === 0) return;
+
+    // Upload all files in batch
+    try {
+      dispatch(contentBuilderSetFileUploading(true));
+      dispatch(contentBuilderSetUploadError(null));
+
+      if (!apiKey) {
+        throw new Error('Anthropic API key not configured');
+      }
+
+      // Add files to state first
+      filesToUpload.forEach((file) => {
+        dispatch(
+          contentBuilderAddUploadedFile({
+            file,
+            fileName: file.name,
+            fileSize: file.size,
+            uploadProgress: 0,
+            isUploading: true,
+          })
+        );
+      });
+
+      // Upload all files in batch
+      const responses = await uploadFilesToContentBuilder(
+        filesToUpload,
+        apiKey,
+        (fileName: string, progress: number) => {
+          console.log(`${fileName} upload progress:`, progress);
+          dispatch(contentBuilderUpdateFileUploadStatus(fileName, progress, true));
+        }
+      );
+
+      // Update each file with its fileId
+      responses.forEach((response, index) => {
+        const file = filesToUpload[index];
+        const fileId = response.fileId || response.id;
+        console.log(`File ${file.name} uploaded with fileId:`, fileId);
+        dispatch(
+          contentBuilderUpdateFileUploadStatus(
+            file.name,
+            100,
+            false,
+            fileId
+          )
+        );
+      });
+
+      toast.success(`${filesToUpload.length} file${filesToUpload.length !== 1 ? 's' : ''} uploaded successfully!`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+      dispatch(contentBuilderSetUploadError(errorMessage));
+      toast.error(errorMessage);
+    } finally {
+      dispatch(contentBuilderSetFileUploading(false));
+    }
+
+    // Reset input to allow re-uploading same file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = (fileId: string | undefined) => {
+    if (!fileId) return;
+    dispatch(contentBuilderRemoveUploadedFile(fileId));
+    toast.success('File removed');
+  };
+
+  const handleSelectFile = (fileId: string | undefined) => {
+    if (!fileId) return;
+    dispatch(contentBuilderSetSelectedFile(fileId));
+  };
+
+  const handleRegenerateContent = async () => {
+    try {
+      console.log('Selected file:', selectedFile);
+      console.log('Uploaded files:', uploadedFiles);
+      
+      if (!selectedFile || !selectedFile.fileId) {
+        toast.error('Please select a file first');
+        return;
+      }
+
+      dispatch(contentBuilderSetGenerating(true));
+      dispatch(contentBuilderSetGenerationError(null));
+
+      const response = await generateAdaptiveContent({
+        fileId: selectedFile.fileId,
+        sectionNumber: 1,
+        topicName: 'Study Material',
+        contentType: customizationSettings.formatStyle,
+        contentDepth: customizationSettings.contentDepth,
+        visualStyle: customizationSettings.visualStyle,
+        outputLanguage: customizationSettings.outputLanguage,
+        contentTypeId: selectedContentTypeId || 'sticky-notes',
+      });
+
+      console.log('API Response:', response);
+
+      if (response.success) {
+        // Handle new API response format: { success: true, images: [...] }
+        const images = (response as any).images || (response.data as any)?.images || (response.data as any)?.zipFile || [];
+        
+        console.log('Images from response:', images);
+
+        // Validate images array
+        if (!Array.isArray(images) || images.length === 0) {
+          throw new Error('No images returned from API');
+        }
+
+        // Ensure all images have slideNumber and url
+        const validImages = images.filter(
+          (img: any) => img && typeof img === 'object' && 'slideNumber' in img && 'url' in img
+        ) as Array<{ slideNumber: number; url: string }>;
+
+        if (validImages.length === 0) {
+          throw new Error('Invalid image format in response');
+        }
+
+        console.log('Valid images:', validImages);
+
+        dispatch(
+          contentBuilderSetGeneratedContent({
+            sectionNumber: 1,
+            topicName: 'Study Material',
+            contentType: customizationSettings.formatStyle,
+            htmlContent: 'adaptive-content',
+            inputTokens: 0,
+            outputTokens: 0,
+            generatedAt: new Date().toISOString(),
+            imageData: validImages,
+            fileName: 'adaptive-content-images.zip',
+            mimeType: 'application/zip',
+            zipFiles: validImages,
+            pdfLink: undefined,
+          })
+        );
+
+        toast.success(`Content generated successfully with ${validImages.length} image(s)!`);
+        console.log('Generated content stored in Redux:', validImages);
+      } else {
+        throw new Error(response.message || 'Failed to generate content');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate content';
+      dispatch(contentBuilderSetGenerationError(errorMessage));
+      toast.error(errorMessage);
+    } finally {
+      dispatch(contentBuilderSetGenerating(false));
+    }
+  };
+
+  const handleFinalizeAndSave = async () => {
+    try {
+      if (!generatedContent) {
+        toast.error('No content to view');
+        return;
+      }
+
+      // Check if imageData is an array of objects with URLs
+      if (Array.isArray(generatedContent.imageData) && generatedContent.imageData.length > 0) {
+        console.log('Opening images in new tabs...');
+        
+        // Extract URLs from imageData array
+        const imageUrls = generatedContent.imageData
+          .filter((item: any) => item.url)
+          .map((item: any) => item.url);
+
+        if (imageUrls.length === 0) {
+          throw new Error('No image URLs found in response');
+        }
+
+        console.log('Found', imageUrls.length, 'image URL(s)');
+        
+        // Open each image in a new tab
+        imageUrls.forEach((url: string, index: number) => {
+          console.log(`Opening image ${index + 1} in new tab:`, url);
+          window.open(url, '_blank');
+        });
+        
+        toast.success(`Opened ${imageUrls.length} image(s) in new tab(s)!`);
+      } else if (typeof generatedContent.imageData === 'string') {
+        // Fallback: if imageData is a base64 string, decode and download as ZIP
+        try {
+          console.log('Image data is base64 string, downloading as ZIP...');
+          
+          let cleanBase64 = generatedContent.imageData;
+          
+          // Handle data URLs
+          if (cleanBase64.includes(',')) {
+            cleanBase64 = cleanBase64.split(',')[1];
+          }
+
+          // Remove any whitespace and newlines
+          cleanBase64 = cleanBase64.replace(/\s/g, '').replace(/\n/g, '').replace(/\r/g, '');
+
+          // Validate base64 format
+          if (cleanBase64.length % 4 !== 0) {
+            while (cleanBase64.length % 4 !== 0) {
+              cleanBase64 += '=';
+            }
+          }
+
+          const byteCharacters = atob(cleanBase64);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const zipBlob = new Blob([byteArray], { type: 'application/zip' });
+
+          const blobUrl = window.URL.createObjectURL(zipBlob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = 'adaptive-content.zip';
+          link.style.display = 'none';
+          
+          document.body.appendChild(link);
+          link.click();
+          
+          setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+          }, 100);
+
+          toast.success('ZIP file downloaded successfully!');
+        } catch (zipError) {
+          console.error('Error downloading ZIP:', zipError);
+          toast.error(`Failed to download: ${zipError instanceof Error ? zipError.message : 'Unknown error'}`);
+        }
+      } else {
+        toast.error('No content available');
+        console.log('No valid imageData found');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to open content';
+      toast.error(errorMessage);
+      console.error('Error:', error);
+    }
+  };
+  
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
   const sections = [
@@ -87,6 +381,16 @@ export const ContentBuilder: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+      <style>{`
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
       <PageHeader>
         <Breadcrumbs>
           <BreadcrumbLink onClick={handleBackToAdaptiveContent}>Adaptive Content</BreadcrumbLink>
@@ -99,17 +403,24 @@ export const ContentBuilder: React.FC = () => {
             <HeaderSubtitle>Generate and customize textbook-aligned teaching aids.</HeaderSubtitle>
           </div>
           <HeaderActions>
-            <PreviewButton>
+            <PreviewButton disabled={!generatedContent}>
               <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>
                 preview
               </span>
               Preview
             </PreviewButton>
-            <SaveButton>
+            <SaveButton
+              onClick={handleFinalizeAndSave}
+              // disabled={!generatedContent || isSaving}
+              style={{
+                opacity: !generatedContent || isSaving ? 0.5 : 1,
+                cursor: !generatedContent || isSaving ? 'not-allowed' : 'pointer',
+              }}
+            >
               <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>
-                save
+                {isSaving ? 'hourglass_empty' : 'save'}
               </span>
-              Finalize & Save
+              {isSaving ? 'Saving...' : 'Finalize & Save'}
             </SaveButton>
           </HeaderActions>
         </HeaderContent>
@@ -156,22 +467,128 @@ export const ContentBuilder: React.FC = () => {
 
             <FormGroup style={{ paddingTop: '1rem' }}>
               <Label>PDF Reference</Label>
-              <PdfPreview>
-                <PdfPreviewContent>
-                  <PdfPlaceholderLine width="75%" />
-                  <PdfPlaceholderLine />
-                  <PdfPlaceholderLine />
-                  <PdfPlaceholderLine width="83%" />
-                  <PdfImagePlaceholder>
-                    <span className="material-symbols-outlined" style={{ fontSize: '2.5rem' }}>
-                      image
-                    </span>
-                  </PdfImagePlaceholder>
-                  <PdfPlaceholderLine />
-                  <PdfPlaceholderLine width="80%" />
-                </PdfPreviewContent>
-              </PdfPreview>
-              <PdfCaption>Page 46 - Animal Kingdom</PdfCaption>
+              <div
+                onClick={() => !isUploading && fileInputRef.current?.click()}
+                style={{
+                  padding: '2rem',
+                  border: '2px dashed #e2e8f0',
+                  borderRadius: '0.75rem',
+                  textAlign: 'center',
+                  cursor: isUploading ? 'not-allowed' : 'pointer',
+                  backgroundColor: isUploading ? '#f3f4f6' : '#f9fafb',
+                  transition: 'all 0.2s',
+                  opacity: isUploading ? 0.6 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  if (!isUploading) {
+                    (e.currentTarget as HTMLElement).style.borderColor = '#2563eb';
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#f0f9ff';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isUploading) {
+                    (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0';
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#f9fafb';
+                  }
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: '#2563eb', display: 'block', marginBottom: '0.5rem', animation: isUploading ? 'spin 1s linear infinite' : 'none' }}>
+                  {isUploading ? 'hourglass_empty' : 'cloud_upload'}
+                </span>
+                <p style={{ margin: '0.5rem 0', fontWeight: 600, color: '#1f2937' }}>
+                  {isUploading ? 'Uploading PDF...' : 'Upload PDF'}
+                </p>
+                <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#6b7280' }}>
+                  {isUploading ? 'Please wait while your file is being uploaded' : 'Click to browse or drag and drop'}
+                </p>
+                <p style={{ margin: '0.5rem 0', fontSize: '0.75rem', color: '#9ca3af' }}>
+                  PDF files only, max 50MB
+                </p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                multiple
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+              />
+              {uploadError && (
+                <p style={{ margin: '0.5rem 0', fontSize: '0.875rem', color: '#dc2626' }}>
+                  ✗ {uploadError}
+                </p>
+              )}
+
+              {uploadedFiles.length > 0 && (
+                <div style={{ marginTop: '1rem' }}>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#4b5563', marginBottom: '0.75rem' }}>
+                    Uploaded Files ({uploadedFiles.length})
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {uploadedFiles.map((file) => (
+                      <div
+                        key={file.fileId}
+                        onClick={() => handleSelectFile(file.fileId)}
+                        style={{
+                          padding: '0.75rem',
+                          backgroundColor: selectedFileId === file.fileId ? '#e8f2ff' : '#f9fafb',
+                          border: selectedFileId === file.fileId ? '1px solid #2563eb' : '1px solid #e2e8f0',
+                          borderRadius: '0.5rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLElement).style.backgroundColor = '#f0f9ff';
+                          (e.currentTarget as HTMLElement).style.borderColor = '#2563eb';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.backgroundColor = selectedFileId === file.fileId ? '#e8f2ff' : '#f9fafb';
+                          (e.currentTarget as HTMLElement).style.borderColor = selectedFileId === file.fileId ? '#2563eb' : '#e2e8f0';
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ margin: '0', fontSize: '0.875rem', fontWeight: 600, color: '#1f2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {file.fileName}
+                          </p>
+                          <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.75rem', color: '#6b7280' }}>
+                            {formatFileSize(file.fileSize)}
+                            {file.fileId && ` • ID: ${file.fileId.substring(0, 8)}...`}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFile(file.fileId);
+                          }}
+                          style={{
+                            marginLeft: '0.5rem',
+                            padding: '0.25rem 0.5rem',
+                            backgroundColor: '#fee2e2',
+                            color: '#dc2626',
+                            border: 'none',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = '#fecaca';
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = '#fee2e2';
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </FormGroup>
           </PanelContent>
         </LeftPanel>
@@ -187,57 +604,66 @@ export const ContentBuilder: React.FC = () => {
               </CanvasTitle>
               <SaveStatus>
                 <SaveDot />
-                <SaveText>Last saved 2m ago</SaveText>
+                <SaveText>
+                  {generatedContent ? 'Content generated' : 'Ready to generate'}
+                </SaveText>
               </SaveStatus>
             </CanvasHeader>
 
-            <ContentCard>
-              <EditButton>
-                <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>
-                  edit
-                </span>
-              </EditButton>
-              <ContentTitle>Ready Reckoner: Basis of Classification</ContentTitle>
-              <ContentText>
-                <p>
-                  Living organisms are classified based on several fundamental features. This
-                  summary covers the key parameters used in the Animal Kingdom:
-                </p>
-                <ul>
-                  <li>
-                    <strong>Levels of Organisation:</strong> Cellular (e.g., Sponges), Tissue,
-                    Organ, and Organ system.
-                  </li>
-                  <li>
-                    <strong>Symmetry:</strong> Asymmetrical, Radial symmetry, and Bilateral
-                    symmetry.
-                  </li>
-                  <li>
-                    <strong>Germ Layers:</strong> Diploblastic (two layers) vs. Triploblastic (three
-                    layers).
-                  </li>
-                  <li>
-                    <strong>Coelom:</strong> Acoelomates, Pseudocoelomates, and Coelomates.
-                  </li>
-                </ul>
-              </ContentText>
-            </ContentCard>
-
-            <AddContentCard>
-              <AddIconWrapper>
-                <span className="material-symbols-outlined" style={{ fontSize: '1.875rem' }}>
-                  add_circle
-                </span>
-              </AddIconWrapper>
-              <AddContentText>
-                <AddContentTitle>Add Visual Component</AddContentTitle>
-                <AddContentSubtitle>Generate a Concept Map or Comparative Table</AddContentSubtitle>
-              </AddContentText>
-              <AddContentButtons>
-                <AddContentButton>Table View</AddContentButton>
-                <AddContentButton>Concept Map</AddContentButton>
-              </AddContentButtons>
-            </AddContentCard>
+            {generatedContent ? (
+              <>
+                <ContentCard>
+                  <EditButton>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>
+                      edit
+                    </span>
+                  </EditButton>
+                  <ContentTitle>{generatedContent.topicName}</ContentTitle>
+                  <ContentText>
+                    <p>
+                      Content generated successfully with {generatedContent.outputTokens} output tokens.
+                    </p>
+                    <ul>
+                      <li>
+                        <strong>Content Type:</strong> {generatedContent.contentType}
+                      </li>
+                      <li>
+                        <strong>Depth:</strong> {customizationSettings.contentDepth}
+                      </li>
+                      <li>
+                        <strong>Visual Style:</strong> {customizationSettings.visualStyle}
+                      </li>
+                      <li>
+                        <strong>Language:</strong> {customizationSettings.outputLanguage}
+                      </li>
+                    </ul>
+                  </ContentText>
+                </ContentCard>
+              </>
+            ) : (
+              <AddContentCard>
+                <AddIconWrapper>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.875rem' }}>
+                    {isGenerating ? 'hourglass_empty' : 'add_circle'}
+                  </span>
+                </AddIconWrapper>
+                <AddContentText>
+                  <AddContentTitle>
+                    {isGenerating ? 'Generating Content...' : 'Ready to Generate'}
+                  </AddContentTitle>
+                  <AddContentSubtitle>
+                    {isGenerating
+                      ? 'Please wait while we generate your content'
+                      : 'Upload a PDF and click Regenerate Content to get started'}
+                  </AddContentSubtitle>
+                </AddContentText>
+                {generationError && (
+                  <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#fdf2f2', borderRadius: '0.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                    ✗ {generationError}
+                  </div>
+                )}
+              </AddContentCard>
+            )}
           </CanvasContainer>
         </CenterPanel>
 
@@ -249,42 +675,52 @@ export const ContentBuilder: React.FC = () => {
               <SettingsLabel>Content Depth</SettingsLabel>
               <DepthSelector>
                 <DepthButton
-                  isActive={contentDepth === 'beginner'}
-                  onClick={() => setContentDepth('beginner')}
+                  isActive={customizationSettings.contentDepth === 'beginner'}
+                  onClick={() =>
+                    dispatch(contentBuilderUpdateCustomization({ contentDepth: 'beginner' }))
+                  }
                 >
                   Beginner
                 </DepthButton>
                 <DepthButton
-                  isActive={contentDepth === 'intermediate'}
-                  onClick={() => setContentDepth('intermediate')}
+                  isActive={customizationSettings.contentDepth === 'intermediate'}
+                  onClick={() =>
+                    dispatch(contentBuilderUpdateCustomization({ contentDepth: 'intermediate' }))
+                  }
                 >
                   Interm.
                 </DepthButton>
                 <DepthButton
-                  isActive={contentDepth === 'advanced'}
-                  onClick={() => setContentDepth('advanced')}
+                  isActive={customizationSettings.contentDepth === 'advanced'}
+                  onClick={() =>
+                    dispatch(contentBuilderUpdateCustomization({ contentDepth: 'advanced' }))
+                  }
                 >
                   Advanced
                 </DepthButton>
               </DepthSelector>
               <DepthHint>
-                {contentDepth === 'beginner' && 'Beginner: Simplified concepts with basics.'}
-                {contentDepth === 'intermediate' && 'Intermediate: Balanced theory & examples.'}
-                {contentDepth === 'advanced' && 'Advanced: In-depth analysis & details.'}
+                {customizationSettings.contentDepth === 'beginner' && 'Beginner: Simplified concepts with basics.'}
+                {customizationSettings.contentDepth === 'intermediate' && 'Intermediate: Balanced theory & examples.'}
+                {customizationSettings.contentDepth === 'advanced' && 'Advanced: In-depth analysis & details.'}
               </DepthHint>
             </SettingsSection>
 
             <SettingsSection>
               <SettingsLabel>Format Style</SettingsLabel>
               <FormatOption
-                isSelected={formatStyle === 'bullet'}
-                onClick={() => setFormatStyle('bullet')}
+                isSelected={customizationSettings.formatStyle === 'bullet-points'}
+                onClick={() =>
+                  dispatch(contentBuilderUpdateCustomization({ formatStyle: 'bullet-points' }))
+                }
               >
                 <FormatRadio
                   type="radio"
                   name="format"
-                  checked={formatStyle === 'bullet'}
-                  onChange={() => setFormatStyle('bullet')}
+                  checked={customizationSettings.formatStyle === 'bullet-points'}
+                  onChange={() =>
+                    dispatch(contentBuilderUpdateCustomization({ formatStyle: 'bullet-points' }))
+                  }
                 />
                 <FormatContent>
                   <FormatTitle>Bullet Points</FormatTitle>
@@ -292,26 +728,30 @@ export const ContentBuilder: React.FC = () => {
                 </FormatContent>
                 <FormatIcon
                   className="material-symbols-outlined"
-                  isActive={formatStyle === 'bullet'}
+                  isActive={customizationSettings.formatStyle === 'bullet-points'}
                 >
                   format_list_bulleted
                 </FormatIcon>
               </FormatOption>
               <FormatOption
-                isSelected={formatStyle === 'grid'}
-                onClick={() => setFormatStyle('grid')}
+                isSelected={customizationSettings.formatStyle === 'structured-grid'}
+                onClick={() =>
+                  dispatch(contentBuilderUpdateCustomization({ formatStyle: 'structured-grid' }))
+                }
               >
                 <FormatRadio
                   type="radio"
                   name="format"
-                  checked={formatStyle === 'grid'}
-                  onChange={() => setFormatStyle('grid')}
+                  checked={customizationSettings.formatStyle === 'structured-grid'}
+                  onChange={() =>
+                    dispatch(contentBuilderUpdateCustomization({ formatStyle: 'structured-grid' }))
+                  }
                 />
                 <FormatContent>
                   <FormatTitle>Structured Grid</FormatTitle>
                   <FormatSubtitle>Ideal for comparison</FormatSubtitle>
                 </FormatContent>
-                <FormatIcon className="material-symbols-outlined" isActive={formatStyle === 'grid'}>
+                <FormatIcon className="material-symbols-outlined" isActive={customizationSettings.formatStyle === 'structured-grid'}>
                   grid_view
                 </FormatIcon>
               </FormatOption>
@@ -319,10 +759,20 @@ export const ContentBuilder: React.FC = () => {
 
             <SettingsSection>
               <SettingsLabel>Visual Style</SettingsLabel>
-              <Select>
-                <option>Academic (Clean & Formal)</option>
-                <option>Modern (Vibrant Colors)</option>
-                <option>Minimalist (B&W)</option>
+              <Select
+                value={customizationSettings.visualStyle}
+                onChange={(e) =>
+                  dispatch(
+                    contentBuilderUpdateCustomization({
+                      visualStyle: e.target.value as 'academic' | 'creative' | 'minimal' | 'detailed',
+                    })
+                  )
+                }
+              >
+                <option value="academic">Academic (Clean & Formal)</option>
+                <option value="creative">Creative (Engaging & Visual)</option>
+                <option value="minimal">Minimal (Simple & Direct)</option>
+                <option value="detailed">Detailed (Comprehensive)</option>
               </Select>
             </SettingsSection>
 
@@ -330,17 +780,26 @@ export const ContentBuilder: React.FC = () => {
               <SettingsLabel>Output Language</SettingsLabel>
               <LanguageTags>
                 <LanguageTag
-                  isSelected={language === 'english'}
-                  onClick={() => setLanguage('english')}
+                  isSelected={customizationSettings.outputLanguage === 'english'}
+                  onClick={() =>
+                    dispatch(contentBuilderUpdateCustomization({ outputLanguage: 'english' }))
+                  }
                 >
                   English
                 </LanguageTag>
-                <LanguageTag isSelected={language === 'hindi'} onClick={() => setLanguage('hindi')}>
+                <LanguageTag
+                  isSelected={customizationSettings.outputLanguage === 'hindi'}
+                  onClick={() =>
+                    dispatch(contentBuilderUpdateCustomization({ outputLanguage: 'hindi' }))
+                  }
+                >
                   Hindi
                 </LanguageTag>
                 <LanguageTag
-                  isSelected={language === 'spanish'}
-                  onClick={() => setLanguage('spanish')}
+                  isSelected={customizationSettings.outputLanguage === 'spanish'}
+                  onClick={() =>
+                    dispatch(contentBuilderUpdateCustomization({ outputLanguage: 'spanish' }))
+                  }
                 >
                   Spanish
                 </LanguageTag>
@@ -349,9 +808,18 @@ export const ContentBuilder: React.FC = () => {
           </PanelContent>
 
           <PanelFooter>
-            <RegenerateButton>
-              <span className="material-symbols-outlined">refresh</span>
-              Regenerate Content
+            <RegenerateButton
+              onClick={handleRegenerateContent}
+              disabled={uploadedFiles.length === 0 || isGenerating}
+              style={{
+                opacity: uploadedFiles.length === 0 || isGenerating ? 0.5 : 1,
+                cursor: uploadedFiles.length === 0 || isGenerating ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ animation: isGenerating ? 'spin 1s linear infinite' : 'none' }}>
+                {isGenerating ? 'hourglass_empty' : 'refresh'}
+              </span>
+              {isGenerating ? 'Generating...' : 'Regenerate Content'}
             </RegenerateButton>
           </PanelFooter>
         </RightPanel>

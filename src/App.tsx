@@ -51,6 +51,20 @@ const App: React.FC = () => {
   }, []); // Empty dependency array - run only once on mount
 
   const renderPage = (pageId: PageId) => {
+    // Dashboard pages - role-specific
+    if (pageId === 'dashboard') {
+      switch (roleId) {
+        case 'admin':
+          return <AdminDashboard />;
+        case 'teacher':
+          return <TeacherDashboard />;
+        case 'student':
+          return <StudentDashboard />;
+        default:
+          return <AdminDashboard />;
+      }
+    }
+
     // Shared pages for admin and teacher
     if (roleId === 'admin' || roleId === 'teacher') {
       switch (pageId) {
@@ -69,19 +83,8 @@ const App: React.FC = () => {
       }
     }
 
-    // Role-specific default dashboard
-    switch (roleId) {
-      case 'admin':
-        return <AdminDashboard />;
-      case 'teacher':
-        return <TeacherDashboard />;
-      case 'student':
-        return <StudentDashboard />;
-      case 'parent':
-        return <StudentDashboard />;
-      default:
-        return <StudentDashboard />;
-    }
+    // Default to ContentBuilder for all roles
+    return <ContentBuilder />;
   };
 
   const renderDashboard = () => {

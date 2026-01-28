@@ -2,6 +2,7 @@ import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import adaptiveContentSelector from '../../selectors';
 import { setCurrentPage } from '../../../navbar/actions';
+import { contentBuilderSetSelectedContentType } from '../../actions';
 import {
   Container,
   Header,
@@ -37,8 +38,10 @@ export const AdaptiveContent: React.FC = () => {
   const contentTypes = useSelector(adaptiveContentSelector.getContentTypes);
   const aiCredits = useSelector(adaptiveContentSelector.getAICredits);
   const recentlyGenerated = useSelector(adaptiveContentSelector.getRecentlyGenerated);
+  console.log(contentTypes,'contentTypes')
 
-  const handleAIGenerate = () => {
+  const handleAIGenerate = (contentTypeId: string) => {
+    dispatch(contentBuilderSetSelectedContentType(contentTypeId) as any);
     dispatch(setCurrentPage('content-builder') as any);
   };
 
@@ -66,7 +69,7 @@ export const AdaptiveContent: React.FC = () => {
                 <CardDescription>{contentType.description}</CardDescription>
               </CardTextContent>
               <CardActions>
-                <PrimaryButton onClick={handleAIGenerate}>
+                <PrimaryButton onClick={() => handleAIGenerate(contentType.id)}>
                   <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>
                     auto_awesome
                   </span>
