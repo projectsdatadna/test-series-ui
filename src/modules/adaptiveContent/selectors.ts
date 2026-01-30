@@ -59,6 +59,18 @@ export const selectContentBuilderSelectedFile = (state: RootState): UploadedFile
     (f) => f.fileId === state.adaptiveContent.contentBuilder.selectedFileId
   );
 
+export const selectContentBuilderHasAnyFileUploading = (state: RootState): boolean =>
+  state.adaptiveContent.contentBuilder.uploadedFiles.some((f) => f.isUploading);
+
+export const selectContentBuilderHasCompleteFiles = (state: RootState): boolean =>
+  state.adaptiveContent.contentBuilder.uploadedFiles.some((f) => !f.isUploading && f.fileId);
+
+export const selectContentBuilderFileUploadApiLoading = (state: RootState): boolean =>
+  state.adaptiveContent.contentBuilder.fileUploadApiLoading;
+
+export const selectContentBuilderGenerateContentApiLoading = (state: RootState): boolean =>
+  state.adaptiveContent.contentBuilder.generateContentApiLoading;
+
 const adaptiveContentSelector = {
   // Existing
   getLoading: selectAdaptiveContentLoading,
@@ -79,6 +91,10 @@ const adaptiveContentSelector = {
   getSelectedFileId: selectContentBuilderSelectedFileId,
   getSelectedContentTypeId: selectContentBuilderSelectedContentTypeId,
   getSelectedFile: selectContentBuilderSelectedFile,
+  getHasAnyFileUploading: selectContentBuilderHasAnyFileUploading,
+  getHasCompleteFiles: selectContentBuilderHasCompleteFiles,
+  getFileUploadApiLoading: selectContentBuilderFileUploadApiLoading,
+  getGenerateContentApiLoading: selectContentBuilderGenerateContentApiLoading,
 };
 
 export default adaptiveContentSelector;

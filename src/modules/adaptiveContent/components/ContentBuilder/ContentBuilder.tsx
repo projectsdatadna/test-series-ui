@@ -13,6 +13,8 @@ import {
   contentBuilderSetGenerationError,
   contentBuilderUpdateCustomization,
   contentBuilderSetSelectedFile,
+  contentBuilderSetFileUploadApiLoading,
+  contentBuilderSetGenerateContentApiLoading,
 } from '../../actions';
 import { generateAdaptiveContent, uploadFilesToContentBuilder } from '../../services/contentBuilderService';
 import toast from 'react-hot-toast';
@@ -80,17 +82,18 @@ export const ContentBuilder: React.FC = () => {
   // Redux selectors
   const uploadedFiles = useSelector(adaptiveContentSelector.getUploadedFiles);
   const isUploading = useSelector(adaptiveContentSelector.getIsUploading);
+  const hasAnyFileUploading = useSelector(adaptiveContentSelector.getHasAnyFileUploading);
+  const hasCompleteFiles = useSelector(adaptiveContentSelector.getHasCompleteFiles);
   const uploadError = useSelector(adaptiveContentSelector.getUploadError);
   const isGenerating = useSelector(adaptiveContentSelector.getIsGenerating);
   const generatedContent = useSelector(adaptiveContentSelector.getGeneratedContent);
   const generationError = useSelector(adaptiveContentSelector.getGenerationError);
   const customizationSettings = useSelector(adaptiveContentSelector.getCustomizationSettings);
-  const isSaving = useSelector(adaptiveContentSelector.getIsSaving);
   const selectedFileId = useSelector(adaptiveContentSelector.getSelectedFileId);
   const selectedFile = useSelector(adaptiveContentSelector.getSelectedFile);
   const selectedContentTypeId = useSelector(adaptiveContentSelector.getSelectedContentTypeId);
-
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+  const fileUploadApiLoading = useSelector(adaptiveContentSelector.getFileUploadApiLoading);
+  const generateContentApiLoading = useSelector(adaptiveContentSelector.getGenerateContentApiLoading);
 
   const handleBackToAdaptiveContent = () => {
     dispatch(setCurrentPage('adaptive-content') as any);
@@ -112,25 +115,16 @@ export const ContentBuilder: React.FC = () => {
         continue;
       }
 
-      if (file.size > 50 * 1024 * 1024) {
-        toast.error(`${file.name}: File size must be less than 50MB`);
-        dispatch(contentBuilderSetUploadError('File size must be less than 50MB'));
-        continue;
-      }
-
       filesToUpload.push(file);
     }
 
     if (filesToUpload.length === 0) return;
 
-    // Upload all files in batch
+    // Upload all files using pre-signed URLs
     try {
       dispatch(contentBuilderSetFileUploading(true));
+      dispatch(contentBuilderSetFileUploadApiLoading(true));
       dispatch(contentBuilderSetUploadError(null));
-
-      if (!apiKey) {
-        throw new Error('Anthropic API key not configured');
-      }
 
       // Add files to state first
       filesToUpload.forEach((file) => {
@@ -145,10 +139,12 @@ export const ContentBuilder: React.FC = () => {
         );
       });
 
-      // Upload all files in batch
+      // Upload all files using pre-signed URLs
+      console.log('Uploading', filesToUpload.length, 'file(s) using pre-signed URLs');
       const responses = await uploadFilesToContentBuilder(
         filesToUpload,
-        apiKey,
+        'Study Material',
+        'document',
         (fileName: string, progress: number) => {
           console.log(`${fileName} upload progress:`, progress);
           dispatch(contentBuilderUpdateFileUploadStatus(fileName, progress, true));
@@ -175,8 +171,13 @@ export const ContentBuilder: React.FC = () => {
       const errorMessage = error instanceof Error ? error.message : 'Upload failed';
       dispatch(contentBuilderSetUploadError(errorMessage));
       toast.error(errorMessage);
+      // Mark all files as not uploading on error
+      filesToUpload.forEach((file) => {
+        dispatch(contentBuilderUpdateFileUploadStatus(file.name, 0, false));
+      });
     } finally {
       dispatch(contentBuilderSetFileUploading(false));
+      dispatch(contentBuilderSetFileUploadApiLoading(false));
     }
 
     // Reset input to allow re-uploading same file
@@ -207,6 +208,7 @@ export const ContentBuilder: React.FC = () => {
       }
 
       dispatch(contentBuilderSetGenerating(true));
+      dispatch(contentBuilderSetGenerateContentApiLoading(true));
       dispatch(contentBuilderSetGenerationError(null));
 
       const response = await generateAdaptiveContent({
@@ -272,6 +274,7 @@ export const ContentBuilder: React.FC = () => {
       toast.error(errorMessage);
     } finally {
       dispatch(contentBuilderSetGenerating(false));
+      dispatch(contentBuilderSetGenerateContentApiLoading(false));
     }
   };
 
@@ -411,16 +414,16 @@ export const ContentBuilder: React.FC = () => {
             </PreviewButton>
             <SaveButton
               onClick={handleFinalizeAndSave}
-              // disabled={!generatedContent || isSaving}
+              disabled={!generatedContent || isGenerating}
               style={{
-                opacity: !generatedContent || isSaving ? 0.5 : 1,
-                cursor: !generatedContent || isSaving ? 'not-allowed' : 'pointer',
+                opacity: !generatedContent || isGenerating ? 0.5 : 1,
+                cursor: !generatedContent || isGenerating ? 'not-allowed' : 'pointer',
               }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>
-                {isSaving ? 'hourglass_empty' : 'save'}
+                save
               </span>
-              {isSaving ? 'Saving...' : 'Finalize & Save'}
+              Finalize & Save
             </SaveButton>
           </HeaderActions>
         </HeaderContent>
@@ -468,41 +471,41 @@ export const ContentBuilder: React.FC = () => {
             <FormGroup style={{ paddingTop: '1rem' }}>
               <Label>PDF Reference</Label>
               <div
-                onClick={() => !isUploading && fileInputRef.current?.click()}
+                onClick={() => !isUploading && !fileUploadApiLoading && fileInputRef.current?.click()}
                 style={{
                   padding: '2rem',
                   border: '2px dashed #e2e8f0',
                   borderRadius: '0.75rem',
                   textAlign: 'center',
-                  cursor: isUploading ? 'not-allowed' : 'pointer',
-                  backgroundColor: isUploading ? '#f3f4f6' : '#f9fafb',
+                  cursor: isUploading || fileUploadApiLoading ? 'not-allowed' : 'pointer',
+                  backgroundColor: isUploading || fileUploadApiLoading ? '#f3f4f6' : '#f9fafb',
                   transition: 'all 0.2s',
-                  opacity: isUploading ? 0.6 : 1,
+                  opacity: isUploading || fileUploadApiLoading ? 0.6 : 1,
                 }}
                 onMouseEnter={(e) => {
-                  if (!isUploading) {
+                  if (!isUploading && !fileUploadApiLoading) {
                     (e.currentTarget as HTMLElement).style.borderColor = '#2563eb';
                     (e.currentTarget as HTMLElement).style.backgroundColor = '#f0f9ff';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!isUploading) {
+                  if (!isUploading && !fileUploadApiLoading) {
                     (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0';
                     (e.currentTarget as HTMLElement).style.backgroundColor = '#f9fafb';
                   }
                 }}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: '#2563eb', display: 'block', marginBottom: '0.5rem', animation: isUploading ? 'spin 1s linear infinite' : 'none' }}>
-                  {isUploading ? 'hourglass_empty' : 'cloud_upload'}
+                <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: '#2563eb', display: 'block', marginBottom: '0.5rem', animation: isUploading || fileUploadApiLoading ? 'spin 1s linear infinite' : 'none' }}>
+                  {isUploading || fileUploadApiLoading ? 'hourglass_empty' : 'cloud_upload'}
                 </span>
                 <p style={{ margin: '0.5rem 0', fontWeight: 600, color: '#1f2937' }}>
-                  {isUploading ? 'Uploading PDF...' : 'Upload PDF'}
+                  {isUploading || fileUploadApiLoading ? 'Uploading PDF...' : 'Upload PDF'}
                 </p>
                 <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#6b7280' }}>
-                  {isUploading ? 'Please wait while your file is being uploaded' : 'Click to browse or drag and drop'}
+                  {isUploading || fileUploadApiLoading ? 'Please wait while your file is being uploaded' : 'Click to browse or drag and drop'}
                 </p>
                 <p style={{ margin: '0.5rem 0', fontSize: '0.75rem', color: '#9ca3af' }}>
-                  PDF files only, max 50MB
+                  PDF files only
                 </p>
               </div>
               <input
@@ -810,16 +813,16 @@ export const ContentBuilder: React.FC = () => {
           <PanelFooter>
             <RegenerateButton
               onClick={handleRegenerateContent}
-              disabled={uploadedFiles.length === 0 || isGenerating}
+              disabled={!hasCompleteFiles || isGenerating || hasAnyFileUploading || fileUploadApiLoading || generateContentApiLoading}
               style={{
-                opacity: uploadedFiles.length === 0 || isGenerating ? 0.5 : 1,
-                cursor: uploadedFiles.length === 0 || isGenerating ? 'not-allowed' : 'pointer',
+                opacity: !hasCompleteFiles || isGenerating || hasAnyFileUploading || fileUploadApiLoading || generateContentApiLoading ? 0.5 : 1,
+                cursor: !hasCompleteFiles || isGenerating || hasAnyFileUploading || fileUploadApiLoading || generateContentApiLoading ? 'not-allowed' : 'pointer',
               }}
             >
-              <span className="material-symbols-outlined" style={{ animation: isGenerating ? 'spin 1s linear infinite' : 'none' }}>
-                {isGenerating ? 'hourglass_empty' : 'refresh'}
+              <span className="material-symbols-outlined" style={{ animation: isGenerating || generateContentApiLoading ? 'spin 1s linear infinite' : 'none' }}>
+                {isGenerating || generateContentApiLoading ? 'hourglass_empty' : 'refresh'}
               </span>
-              {isGenerating ? 'Generating...' : 'Regenerate Content'}
+              {isGenerating || generateContentApiLoading ? 'Generating...' : 'Regenerate Content'}
             </RegenerateButton>
           </PanelFooter>
         </RightPanel>

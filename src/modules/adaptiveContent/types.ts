@@ -23,6 +23,8 @@ export interface ContentBuilderState {
   saveError: string | null;
   selectedFileId: string | null;
   selectedContentTypeId: string | null;
+  fileUploadApiLoading: boolean;
+  generateContentApiLoading: boolean;
 }
 
 export interface UploadedFileData {

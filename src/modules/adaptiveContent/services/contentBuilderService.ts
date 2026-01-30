@@ -3,8 +3,8 @@
  * Handles API calls for file upload and content generation
  */
 
-import { api } from '../../../utils/api';
-import { uploadFilesInBatch } from '../../../utils/anthropicFilesApi';
+import { createExternalApiClient } from '../../../utils/api';
+import { uploadLargeFiles } from '../../../utils/largeFileUploadApi';
 
 export interface GenerateAdaptiveContentRequest {
   fileId: string;
@@ -63,8 +63,9 @@ export const generateAdaptiveContent = async (
   request: GenerateAdaptiveContentRequest
 ): Promise<GenerateAdaptiveContentResponse> => {
   try {
-    const response = await api.post<GenerateAdaptiveContentResponse>(
-      'adaptive-content/generate',
+    const generateClient = createExternalApiClient();
+    const response = await generateClient.post<GenerateAdaptiveContentResponse>(
+      '/adaptive-content/generate',
       {
         fileId: request.fileId,
         sectionNumber: request.sectionNumber,
@@ -77,7 +78,7 @@ export const generateAdaptiveContent = async (
       }
     );
 
-    return response;
+    return response.data;
   } catch (error) {
     console.error('Error generating adaptive content:', error);
     throw error;
@@ -85,11 +86,12 @@ export const generateAdaptiveContent = async (
 };
 
 /**
- * Upload multiple files to Anthropic Files API via backend using batch API
+ * Upload files using pre-signed URLs (works for all file sizes)
  */
 export const uploadFilesToContentBuilder = async (
   files: File[],
-  apiKey: string,
+  topicName: string,
+  contentType: string,
   onProgress?: (fileName: string, progress: number) => void
 ): Promise<FileUploadResponse[]> => {
   try {
@@ -97,14 +99,17 @@ export const uploadFilesToContentBuilder = async (
       throw new Error('No files provided');
     }
 
-    // Use batch upload API
-    const responses = await uploadFilesInBatch(files, apiKey, onProgress);
+    // Upload using pre-signed URLs
+    const confirmResponse = await uploadLargeFiles(files, topicName, contentType, onProgress);
 
     // Normalize responses to ensure consistent format
-    return responses.map((response) => ({
-      id: response.id || response.fileId,
-      fileId: response.fileId || response.id,
-      filename: response.filename,
+    // Response structure: { success: true, data: { files: [...] } }
+    const uploadedFiles = confirmResponse.data.files || [];
+    
+    return uploadedFiles.map((item: any) => ({
+      id: item.fileId,
+      fileId: item.fileId,
+      filename: item.filename,
     }));
   } catch (error) {
     console.error('Error uploading files:', error);
@@ -112,11 +117,26 @@ export const uploadFilesToContentBuilder = async (
   }
 };
 
+/**
+ * Upload large files (>5MB) using pre-signed URLs
+ * @deprecated Use uploadFilesToContentBuilder instead - it handles all file sizes
+ */
+export const uploadLargeFilesToContentBuilder = async (
+  files: File[],
+  topicName: string,
+  contentType: string,
+  onProgress?: (fileName: string, progress: number) => void
+): Promise<FileUploadResponse[]> => {
+  // Delegate to the unified upload function
+  return uploadFilesToContentBuilder(files, topicName, contentType, onProgress);
+};
+
 export const downloadAdaptiveContent = async (
   request: GenerateAdaptiveContentRequest
 ) => {
-  const response = await api.post(
-    'adaptive-content/generate',
+  const generateClient = createExternalApiClient();
+  const response = await generateClient.post(
+    '/adaptive-content/generate',
     {
       fileId: request.fileId,
       sectionNumber: request.sectionNumber,

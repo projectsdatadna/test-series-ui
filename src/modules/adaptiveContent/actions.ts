@@ -25,6 +25,8 @@ export const CONTENT_BUILDER_SET_SAVE_ERROR = 'contentBuilder/SET_SAVE_ERROR';
 export const CONTENT_BUILDER_SET_SELECTED_FILE = 'contentBuilder/SET_SELECTED_FILE';
 export const CONTENT_BUILDER_SET_SELECTED_CONTENT_TYPE = 'contentBuilder/SET_SELECTED_CONTENT_TYPE';
 export const CONTENT_BUILDER_CLEAR_ALL = 'contentBuilder/CLEAR_ALL';
+export const CONTENT_BUILDER_SET_FILE_UPLOAD_API_LOADING = 'contentBuilder/SET_FILE_UPLOAD_API_LOADING';
+export const CONTENT_BUILDER_SET_GENERATE_CONTENT_API_LOADING = 'contentBuilder/SET_GENERATE_CONTENT_API_LOADING';
 
 // Existing action interfaces
 export interface AdaptiveContentLoadRequestAction {
@@ -134,6 +136,18 @@ export interface ContentBuilderClearAllAction {
   [key: string]: any;
 }
 
+export interface ContentBuilderSetFileUploadApiLoadingAction {
+  type: typeof CONTENT_BUILDER_SET_FILE_UPLOAD_API_LOADING;
+  payload: boolean;
+  [key: string]: any;
+}
+
+export interface ContentBuilderSetGenerateContentApiLoadingAction {
+  type: typeof CONTENT_BUILDER_SET_GENERATE_CONTENT_API_LOADING;
+  payload: boolean;
+  [key: string]: any;
+}
+
 export type AdaptiveContentAction =
   | AdaptiveContentLoadRequestAction
   | AdaptiveContentLoadSuccessAction
@@ -152,7 +166,9 @@ export type AdaptiveContentAction =
   | ContentBuilderSetSaveErrorAction
   | ContentBuilderSetSelectedFileAction
   | ContentBuilderSetSelectedContentTypeAction
-  | ContentBuilderClearAllAction;
+  | ContentBuilderClearAllAction
+  | ContentBuilderSetFileUploadApiLoadingAction
+  | ContentBuilderSetGenerateContentApiLoadingAction;
 
 // Existing action creators
 export const adaptiveContentLoadRequest = (): AdaptiveContentLoadRequestAction => ({
@@ -270,4 +286,18 @@ export const contentBuilderSetSelectedContentType = (
 
 export const contentBuilderClearAll = (): ContentBuilderClearAllAction => ({
   type: CONTENT_BUILDER_CLEAR_ALL,
+});
+
+export const contentBuilderSetFileUploadApiLoading = (
+  payload: boolean
+): ContentBuilderSetFileUploadApiLoadingAction => ({
+  type: CONTENT_BUILDER_SET_FILE_UPLOAD_API_LOADING,
+  payload,
+});
+
+export const contentBuilderSetGenerateContentApiLoading = (
+  payload: boolean
+): ContentBuilderSetGenerateContentApiLoadingAction => ({
+  type: CONTENT_BUILDER_SET_GENERATE_CONTENT_API_LOADING,
+  payload,
 });

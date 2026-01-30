@@ -24,6 +24,8 @@ export const CONTENT_BUILDER_SET_SAVE_ERROR = 'contentBuilder/SET_SAVE_ERROR';
 export const CONTENT_BUILDER_SET_SELECTED_FILE = 'contentBuilder/SET_SELECTED_FILE';
 export const CONTENT_BUILDER_SET_SELECTED_CONTENT_TYPE = 'contentBuilder/SET_SELECTED_CONTENT_TYPE';
 export const CONTENT_BUILDER_CLEAR_ALL = 'contentBuilder/CLEAR_ALL';
+export const CONTENT_BUILDER_SET_FILE_UPLOAD_API_LOADING = 'contentBuilder/SET_FILE_UPLOAD_API_LOADING';
+export const CONTENT_BUILDER_SET_GENERATE_CONTENT_API_LOADING = 'contentBuilder/SET_GENERATE_CONTENT_API_LOADING';
 
 const initialContentBuilderState = {
   uploadedFiles: [],
@@ -42,6 +44,8 @@ const initialContentBuilderState = {
   saveError: null,
   selectedFileId: null,
   selectedContentTypeId: null,
+  fileUploadApiLoading: false,
+  generateContentApiLoading: false,
 };
 
 const initialState: AdaptiveContentState = {
@@ -284,6 +288,24 @@ export const adaptiveContentReducer = (
       return {
         ...state,
         contentBuilder: initialContentBuilderState,
+      };
+
+    case CONTENT_BUILDER_SET_FILE_UPLOAD_API_LOADING:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          fileUploadApiLoading: action.payload,
+        },
+      };
+
+    case CONTENT_BUILDER_SET_GENERATE_CONTENT_API_LOADING:
+      return {
+        ...state,
+        contentBuilder: {
+          ...state.contentBuilder,
+          generateContentApiLoading: action.payload,
+        },
       };
 
     default:

@@ -106,4 +106,32 @@ export const authTokenManager = {
   },
 };
 
+// Create axios instance for external APIs with bearer token
+export const createExternalApiClient = (baseUrl?: string): AxiosInstance => {
+  const url = baseUrl || import.meta.env.VITE_GENERATE_CLAUDE_CONTENT_URL;
+  
+  const client = axios.create({
+    baseURL: url,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  // Add bearer token to requests
+  client.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+
+  return client;
+};
+
 export default api;
