@@ -223,6 +223,18 @@ export const Navbar: React.FC<NavbarProps> = ({ children, isOpen }) => {
         </NavMenu>
 
         <NavFooter>
+          <NavLink
+            href="#"
+            isActive={currentPage === 'book-upload'}
+            onClick={(e) => handleNavClick('book-upload', e)}
+          >
+            <NavIcon>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>
+                upload_file
+              </span>
+            </NavIcon>
+            Book Upload
+          </NavLink>
           <NavLink href="#" isActive={false}>
             <NavIcon>
               <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>

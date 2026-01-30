@@ -13,6 +13,7 @@ import { RemedialLab } from './modules/remedialLab/components/RemedialLab';
 import { AdaptiveContent } from './modules/adaptiveContent/components/AdaptiveContent';
 import { ContentBuilder } from './modules/adaptiveContent/components/ContentBuilder';
 import { AssessmentConfigurator } from './modules/assessmentConfigurator/components/AssessmentConfigurator';
+import { BookUploadPage } from './modules/bookUpload/components/BookUploadPage';
 import { setRoleId, loginSuccess } from './modules/auth/actions';
 import { storageManager } from './utils/storage';
 import type { UserRole } from './modules/auth/types';
@@ -78,13 +79,15 @@ const App: React.FC = () => {
           return <AdaptiveContent />;
         case 'content-builder':
           return <ContentBuilder />;
+        case 'book-upload':
+          return <BookUploadPage />;
         default:
           break;
       }
     }
 
-    // Default to ContentBuilder for all roles
-    return <ContentBuilder />;
+    // Default to BookUploadPage for all roles
+    return <BookUploadPage />;
   };
 
   const renderDashboard = () => {

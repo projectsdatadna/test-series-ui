@@ -17,6 +17,7 @@ import {
   contentBuilderSetGenerateContentApiLoading,
 } from '../../actions';
 import { generateAdaptiveContent, uploadFilesToContentBuilder } from '../../services/contentBuilderService';
+import { HierarchySelector } from '../HierarchySelector';
 import toast from 'react-hot-toast';
 import {
   Container,
@@ -78,6 +79,13 @@ export const ContentBuilder: React.FC = () => {
   const dispatch = useDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedSection, setSelectedSection] = useState('4.1');
+  const [hierarchySelection, setHierarchySelection] = useState({
+    syllabusId: null as string | null,
+    standardId: null as string | null,
+    subjectId: null as string | null,
+    chapterId: null as string | null,
+    chapterFileId: null as string | null,
+  });
 
   // Redux selectors
   const uploadedFiles = useSelector(adaptiveContentSelector.getUploadedFiles);
@@ -202,8 +210,16 @@ export const ContentBuilder: React.FC = () => {
       console.log('Selected file:', selectedFile);
       console.log('Uploaded files:', uploadedFiles);
       
-      if (!selectedFile || !selectedFile.fileId) {
-        toast.error('Please select a file first');
+      // Use fileId from selected chapter if available, otherwise use selected file
+      const fileIdToUse = hierarchySelection.chapterFileId || selectedFile?.fileId;
+      
+      if (!fileIdToUse) {
+        toast.error('Please select a chapter or upload a file');
+        return;
+      }
+
+      if (!hierarchySelection.chapterId) {
+        toast.error('Please select a chapter');
         return;
       }
 
@@ -212,9 +228,9 @@ export const ContentBuilder: React.FC = () => {
       dispatch(contentBuilderSetGenerationError(null));
 
       const response = await generateAdaptiveContent({
-        fileId: selectedFile.fileId,
+        fileId: fileIdToUse,
         sectionNumber: 1,
-        topicName: 'Study Material',
+        topicName: hierarchySelection.chapterId || 'Study Material',
         contentType: customizationSettings.formatStyle,
         contentDepth: customizationSettings.contentDepth,
         visualStyle: customizationSettings.visualStyle,
@@ -249,7 +265,7 @@ export const ContentBuilder: React.FC = () => {
         dispatch(
           contentBuilderSetGeneratedContent({
             sectionNumber: 1,
-            topicName: 'Study Material',
+            topicName: hierarchySelection.chapterId || 'Study Material',
             contentType: customizationSettings.formatStyle,
             htmlContent: 'adaptive-content',
             inputTokens: 0,
@@ -414,10 +430,10 @@ export const ContentBuilder: React.FC = () => {
             </PreviewButton>
             <SaveButton
               onClick={handleFinalizeAndSave}
-              disabled={!generatedContent || isGenerating}
+              disabled={!generatedContent || isGenerating || generateContentApiLoading}
               style={{
-                opacity: !generatedContent || isGenerating ? 0.5 : 1,
-                cursor: !generatedContent || isGenerating ? 'not-allowed' : 'pointer',
+                opacity: !generatedContent || isGenerating || generateContentApiLoading ? 0.5 : 1,
+                cursor: !generatedContent || isGenerating || generateContentApiLoading ? 'not-allowed' : 'pointer',
               }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>
@@ -435,19 +451,10 @@ export const ContentBuilder: React.FC = () => {
             <PanelTitle>Textbook Context</PanelTitle>
 
             <FormGroup>
-              <Label>Select Book</Label>
-              <Select defaultValue="biology">
-                <option value="biology">Biology Grade 11 - NCERT</option>
-                <option value="chemistry">Chemistry Grade 11 - NCERT</option>
-              </Select>
-            </FormGroup>
-
-            <FormGroup>
-              <Label>Chapter</Label>
-              <Select defaultValue="04">
-                <option value="04">04. Animal Kingdom</option>
-                <option value="05">05. Plant Physiology</option>
-              </Select>
+              <Label>Select Hierarchy</Label>
+              <HierarchySelector
+                onSelectionChange={(selection) => setHierarchySelection(selection)}
+              />
             </FormGroup>
 
             <FormGroup>
@@ -623,23 +630,51 @@ export const ContentBuilder: React.FC = () => {
                   </EditButton>
                   <ContentTitle>{generatedContent.topicName}</ContentTitle>
                   <ContentText>
-                    <p>
-                      Content generated successfully with {generatedContent.outputTokens} output tokens.
-                    </p>
-                    <ul>
-                      <li>
-                        <strong>Content Type:</strong> {generatedContent.contentType}
-                      </li>
-                      <li>
-                        <strong>Depth:</strong> {customizationSettings.contentDepth}
-                      </li>
-                      <li>
-                        <strong>Visual Style:</strong> {customizationSettings.visualStyle}
-                      </li>
-                      <li>
-                        <strong>Language:</strong> {customizationSettings.outputLanguage}
-                      </li>
-                    </ul>
+                    {Array.isArray(generatedContent.imageData) && generatedContent.imageData.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        {generatedContent.imageData.map((image: any, index: number) => (
+                          <div
+                            key={index}
+                            style={{
+                              borderRadius: '0.5rem',
+                              overflow: 'hidden',
+                              border: '1px solid #e5e7eb',
+                              backgroundColor: '#f9fafb',
+                            }}
+                          >
+                            <img
+                              src={image.url}
+                              alt={`Generated content slide ${image.slideNumber}`}
+                              style={{
+                                width: '100%',
+                                height: 'auto',
+                                display: 'block',
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div>
+                        <p>
+                          Content generated successfully with {generatedContent.outputTokens} output tokens.
+                        </p>
+                        <ul>
+                          <li>
+                            <strong>Content Type:</strong> {generatedContent.contentType}
+                          </li>
+                          <li>
+                            <strong>Depth:</strong> {customizationSettings.contentDepth}
+                          </li>
+                          <li>
+                            <strong>Visual Style:</strong> {customizationSettings.visualStyle}
+                          </li>
+                          <li>
+                            <strong>Language:</strong> {customizationSettings.outputLanguage}
+                          </li>
+                        </ul>
+                      </div>
+                    )}
                   </ContentText>
                 </ContentCard>
               </>
@@ -657,7 +692,7 @@ export const ContentBuilder: React.FC = () => {
                   <AddContentSubtitle>
                     {isGenerating
                       ? 'Please wait while we generate your content'
-                      : 'Upload a PDF and click Regenerate Content to get started'}
+                      : 'Select a chapter and click Regenerate Content to get started'}
                   </AddContentSubtitle>
                 </AddContentText>
                 {generationError && (
@@ -813,10 +848,10 @@ export const ContentBuilder: React.FC = () => {
           <PanelFooter>
             <RegenerateButton
               onClick={handleRegenerateContent}
-              disabled={!hasCompleteFiles || isGenerating || hasAnyFileUploading || fileUploadApiLoading || generateContentApiLoading}
+              disabled={!hierarchySelection.chapterId || isGenerating || hasAnyFileUploading || fileUploadApiLoading || generateContentApiLoading}
               style={{
-                opacity: !hasCompleteFiles || isGenerating || hasAnyFileUploading || fileUploadApiLoading || generateContentApiLoading ? 0.5 : 1,
-                cursor: !hasCompleteFiles || isGenerating || hasAnyFileUploading || fileUploadApiLoading || generateContentApiLoading ? 'not-allowed' : 'pointer',
+                opacity: !hierarchySelection.chapterId || isGenerating || hasAnyFileUploading || fileUploadApiLoading || generateContentApiLoading ? 0.5 : 1,
+                cursor: !hierarchySelection.chapterId || isGenerating || hasAnyFileUploading || fileUploadApiLoading || generateContentApiLoading ? 'not-allowed' : 'pointer',
               }}
             >
               <span className="material-symbols-outlined" style={{ animation: isGenerating || generateContentApiLoading ? 'spin 1s linear infinite' : 'none' }}>

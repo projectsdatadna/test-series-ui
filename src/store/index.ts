@@ -19,6 +19,8 @@ import { remedialLabReducer } from '../modules/remedialLab/reducer';
 import type { RemedialLabState } from '../modules/remedialLab/types';
 import { adaptiveContentReducer } from '../modules/adaptiveContent/reducer';
 import type { AdaptiveContentState } from '../modules/adaptiveContent/types';
+import { bookUploadReducer } from '../modules/bookUpload/reducer';
+import type { BookUploadState } from '../modules/bookUpload/types';
 
 // Root state shape
 export interface RootState {
@@ -31,6 +33,7 @@ export interface RootState {
   assessmentBuilder: AssessmentBuilderState;
   remedialLab: RemedialLabState;
   adaptiveContent: AdaptiveContentState;
+  bookUpload: BookUploadState;
 }
 
 // Create combined reducer
@@ -46,6 +49,7 @@ const rootReducer: Reducer<RootState, AnyAction> = (state, action) => {
       assessmentBuilder: assessmentBuilderReducer(undefined, action as any),
       remedialLab: remedialLabReducer(undefined, action as any),
       adaptiveContent: adaptiveContentReducer(undefined, action as any),
+      bookUpload: bookUploadReducer(undefined, action as any),
     };
   }
   return {
@@ -61,6 +65,7 @@ const rootReducer: Reducer<RootState, AnyAction> = (state, action) => {
     assessmentBuilder: assessmentBuilderReducer(state.assessmentBuilder, action as any),
     remedialLab: remedialLabReducer(state.remedialLab, action as any),
     adaptiveContent: adaptiveContentReducer(state.adaptiveContent, action as any),
+    bookUpload: bookUploadReducer(state.bookUpload, action as any),
   };
 };
 

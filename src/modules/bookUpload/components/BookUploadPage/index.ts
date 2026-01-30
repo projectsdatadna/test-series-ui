@@ -1,0 +1,1 @@
+export { BookUploadPage } from './BookUploadPage';
