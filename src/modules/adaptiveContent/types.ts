@@ -9,6 +9,7 @@ export interface AdaptiveContentState {
   aiCredits: number;
   recentlyGenerated: number;
   contentBuilder: ContentBuilderState;
+  contentLibrary: ContentLibraryState;
 }
 
 export interface ContentBuilderState {
@@ -25,6 +26,38 @@ export interface ContentBuilderState {
   selectedContentTypeId: string | null;
   fileUploadApiLoading: boolean;
   generateContentApiLoading: boolean;
+}
+
+export interface ContentLibraryState {
+  items: ContentLibraryItem[];
+  loading: boolean;
+  error: string | null;
+  filters: ContentLibraryFilters;
+  totalAssets: number;
+  assignedToday: number;
+  aiGenerated: number;
+}
+
+export interface ContentLibraryItem {
+  id: string;
+  title: string;
+  description: string;
+  contentType: string;
+  subjects: string[];
+  standard: string;
+  chapter: string;
+  imageUrl: string;
+  usedByClasses: number;
+  createdAt: string;
+  fileIds: string[];
+  aidType?: string;
+}
+
+export interface ContentLibraryFilters {
+  searchQuery: string;
+  chapterSection?: string;
+  aidType?: string;
+  standard?: string;
 }
 
 export interface UploadedFileData {

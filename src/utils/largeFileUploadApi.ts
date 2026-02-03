@@ -105,7 +105,7 @@ export const uploadFileToS3 = async (
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve();
       } else {
-        reject(new Error(`Upload failed with status ${xhr.status}`));
+        reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.statusText}`));
       }
     });
 
@@ -118,7 +118,9 @@ export const uploadFileToS3 = async (
     });
 
     xhr.open('PUT', uploadUrl);
-    xhr.setRequestHeader('Content-Type', file.type);
+    // Important: Do NOT set any headers for presigned URLs
+    // The URL is signed with specific headers (only 'host' in this case)
+    // Adding any headers will invalidate the signature and cause 403 Forbidden
     xhr.send(file);
   });
 };
@@ -173,19 +175,14 @@ export const uploadLargeFiles = async (
   onProgress?: (fileName: string, progress: number) => void
 ): Promise<ConfirmUploadResponse> => {
   try {
-    // Step 1: Get pre-signed URLs
-    console.log('Getting pre-signed URLs for', files.length, 'file(s)');
     const uploadUrls = await getUploadUrls(files);
 
     if (uploadUrls.length !== files.length) {
       throw new Error('Mismatch between requested and received upload URLs');
     }
 
-    // Step 2: Upload each file directly to S3
-    console.log('Uploading files to S3');
     const uploadPromises = uploadUrls.map(async (urlData, index) => {
       const file = files[index];
-      console.log(`Uploading ${file.name}...`);
 
       await uploadFileToS3(file, urlData.uploadUrl, (progress) => {
         if (onProgress) {
@@ -193,17 +190,12 @@ export const uploadLargeFiles = async (
         }
       });
 
-      console.log(`${file.name} uploaded successfully`);
       return urlData.fileKey;
     });
 
     const fileKeys = await Promise.all(uploadPromises);
-
-    // Step 3: Confirm upload and process
-    console.log('Confirming upload with file keys:', fileKeys);
     const confirmResponse = await confirmUpload(fileKeys, topicName, contentType);
 
-    console.log('Upload confirmed successfully');
     return confirmResponse;
   } catch (error) {
     console.error('Error uploading large files:', error);

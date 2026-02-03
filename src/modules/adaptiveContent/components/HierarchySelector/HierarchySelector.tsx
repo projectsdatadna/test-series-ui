@@ -42,10 +42,26 @@ const customStyles = {
 interface HierarchySelectorProps {
   onSelectionChange?: (selection: {
     syllabusId: string | null;
+    syllabusName?: string | null;
     standardId: string | null;
+    standardName?: string | null;
     subjectId: string | null;
+    subjectName?: string | null;
     chapterId: string | null;
+    chapterName?: string | null;
     chapterFileId: string | null;
+    chapterSections?: Array<{
+      number: string;
+      label: string;
+      subsections?: Array<{
+        number: string;
+        label: string;
+        subsections?: Array<{
+          number: string;
+          label: string;
+        }>;
+      }>;
+    }>;
   }) => void;
 }
 
@@ -174,13 +190,18 @@ export const HierarchySelector: React.FC<HierarchySelectorProps> = ({ onSelectio
     if (onSelectionChange) {
       onSelectionChange({
         syllabusId: selectedSyllabus,
+        syllabusName: syllabuses.find((s) => s.id === selectedSyllabus)?.name || null,
         standardId: selectedStandard,
+        standardName: standards.find((s) => s.id === selectedStandard)?.name || null,
         subjectId: selectedSubject,
+        subjectName: subjects.find((s) => s.id === selectedSubject)?.name || null,
         chapterId: selectedChapter,
+        chapterName: chapters.find((c) => c.id === selectedChapter)?.name || null,
         chapterFileId: selectedChapterFileId,
+        chapterSections: chapters.find((c) => c.id === selectedChapter)?.sections,
       });
     }
-  }, [selectedSyllabus, selectedStandard, selectedSubject, selectedChapter, selectedChapterFileId, onSelectionChange]);
+  }, [selectedSyllabus, selectedStandard, selectedSubject, selectedChapter, selectedChapterFileId, onSelectionChange, syllabuses, standards, subjects, chapters]);
 
   return (
     <Container>
@@ -189,7 +210,7 @@ export const HierarchySelector: React.FC<HierarchySelectorProps> = ({ onSelectio
           Syllabus
         </label>
         <Select
-          options={syllabuses.map((item) => ({ value: item.id, label: item.name }))}
+          options={syllabuses.sort((a, b) => a.name.localeCompare(b.name)).map((item) => ({ value: item.id, label: item.name }))}
           value={selectedSyllabus ? { value: selectedSyllabus, label: syllabuses.find((s) => s.id === selectedSyllabus)?.name } : null}
           onChange={(option) => setSelectedSyllabus(option?.value || null)}
           isDisabled={loadingSyllabuses}
@@ -205,7 +226,12 @@ export const HierarchySelector: React.FC<HierarchySelectorProps> = ({ onSelectio
           Standard
         </label>
         <Select
-          options={standards.map((item) => ({ value: item.id, label: item.name }))}
+          options={standards.sort((a, b) => {
+            // Extract numeric values from names like "Class 6", "Class 7", etc.
+            const numA = parseInt(a.name.match(/\d+/)?.[0] || '0');
+            const numB = parseInt(b.name.match(/\d+/)?.[0] || '0');
+            return numA - numB;
+          }).map((item) => ({ value: item.id, label: item.name }))}
           value={selectedStandard ? { value: selectedStandard, label: standards.find((s) => s.id === selectedStandard)?.name } : null}
           onChange={(option) => setSelectedStandard(option?.value || null)}
           isDisabled={!selectedSyllabus || loadingStandards || standards.length === 0}
@@ -221,7 +247,7 @@ export const HierarchySelector: React.FC<HierarchySelectorProps> = ({ onSelectio
           Subject
         </label>
         <Select
-          options={subjects.map((item) => ({ value: item.id, label: item.name }))}
+          options={subjects.sort((a, b) => a.name.localeCompare(b.name)).map((item) => ({ value: item.id, label: item.name }))}
           value={selectedSubject ? { value: selectedSubject, label: subjects.find((s) => s.id === selectedSubject)?.name } : null}
           onChange={(option) => setSelectedSubject(option?.value || null)}
           isDisabled={!selectedStandard || loadingSubjects || subjects.length === 0}
@@ -237,7 +263,12 @@ export const HierarchySelector: React.FC<HierarchySelectorProps> = ({ onSelectio
           Chapter
         </label>
         <Select
-          options={chapters.map((item) => ({ value: item.id, label: item.name, fileId: item.fileId }))}
+          options={chapters.sort((a, b) => {
+            // Extract numeric values from names like "Chapter 1", "Chapter 2", etc.
+            const numA = parseInt(a.name.match(/\d+/)?.[0] || '0');
+            const numB = parseInt(b.name.match(/\d+/)?.[0] || '0');
+            return numA - numB;
+          }).map((item) => ({ value: item.id, label: item.name, fileId: item.fileId }))}
           value={selectedChapter ? { value: selectedChapter, label: chapters.find((c) => c.id === selectedChapter)?.name, fileId: chapters.find((c) => c.id === selectedChapter)?.fileId } : null}
           onChange={(option) => {
             setSelectedChapter(option?.value || null);

@@ -8,8 +8,6 @@
  */
 export const downloadBase64File = (base64Data: string, filename: string, mimeType: string = 'application/zip'): void => {
   try {
-    console.log('Downloading base64 file:', filename);
-    
     // Handle both standard base64 and data URLs
     let cleanBase64 = base64Data;
     if (base64Data.includes(',')) {
@@ -33,7 +31,6 @@ export const downloadBase64File = (base64Data: string, filename: string, mimeTyp
     link.style.display = 'none';
     
     document.body.appendChild(link);
-    console.log('Triggering download for:', filename);
     link.click();
     
     // Cleanup
@@ -53,8 +50,6 @@ export const downloadBase64File = (base64Data: string, filename: string, mimeTyp
  */
 export const downloadImagesAsPDF = async (imageUrls: string[], pdfFilename: string = 'adaptive-content.pdf'): Promise<void> => {
   try {
-    console.log('Converting images to PDF via backend:', imageUrls);
-    
     let BACKEND_API_BASE = import.meta.env.VITE_API_URL || 'https://vxreyz8fjc.execute-api.ap-south-1.amazonaws.com/';
     
     // Ensure trailing slash
@@ -65,9 +60,6 @@ export const downloadImagesAsPDF = async (imageUrls: string[], pdfFilename: stri
     const token = localStorage.getItem('authToken');
     const endpoint = `${BACKEND_API_BASE}download/images-to-pdf`;
 
-    console.log('Calling backend endpoint:', endpoint);
-    console.log('Image URLs:', imageUrls);
-
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -77,8 +69,6 @@ export const downloadImagesAsPDF = async (imageUrls: string[], pdfFilename: stri
       body: JSON.stringify({ imageUrls, pdfFilename }),
     });
 
-    console.log('Response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Error response:', errorText);
@@ -87,8 +77,6 @@ export const downloadImagesAsPDF = async (imageUrls: string[], pdfFilename: stri
 
     // Get the PDF blob from response
     const blob = await response.blob();
-    console.log('PDF blob size:', blob.size);
-    console.log('PDF blob type:', blob.type);
 
     if (blob.size === 0) {
       throw new Error('Generated PDF is empty');
@@ -102,7 +90,6 @@ export const downloadImagesAsPDF = async (imageUrls: string[], pdfFilename: stri
     link.style.display = 'none';
     
     document.body.appendChild(link);
-    console.log('Triggering PDF download...');
     link.click();
     
     // Cleanup
@@ -110,8 +97,6 @@ export const downloadImagesAsPDF = async (imageUrls: string[], pdfFilename: stri
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     }, 100);
-
-    console.log('PDF downloaded successfully');
   } catch (error) {
     console.error('Error converting images to PDF:', error);
     throw error;
@@ -123,8 +108,6 @@ export const downloadImagesAsPDF = async (imageUrls: string[], pdfFilename: stri
  */
 export const downloadFileDirectly = async (url: string, filename: string): Promise<void> => {
   try {
-    console.log('Downloading directly from:', url);
-    
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
@@ -161,9 +144,6 @@ export const downloadFilesAsZip = async (
     const token = localStorage.getItem('authToken');
     const endpoint = `${BACKEND_API_BASE}download/files-zip`;
 
-    console.log('Downloading from endpoint:', endpoint);
-    console.log('Files to download:', files);
-
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -173,9 +153,6 @@ export const downloadFilesAsZip = async (
       body: JSON.stringify({ files }),
     });
 
-    console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Error response:', errorText);
@@ -184,8 +161,6 @@ export const downloadFilesAsZip = async (
 
     // Get the blob from response
     const blob = await response.blob();
-    console.log('Blob size:', blob.size);
-    console.log('Blob type:', blob.type);
 
     if (blob.size === 0) {
       throw new Error('Downloaded file is empty');
@@ -199,7 +174,6 @@ export const downloadFilesAsZip = async (
     link.style.display = 'none';
     
     document.body.appendChild(link);
-    console.log('Triggering download...');
     link.click();
     
     // Cleanup
@@ -226,8 +200,6 @@ export const downloadFile = async (url: string, filename: string): Promise<void>
 
     const token = localStorage.getItem('authToken');
     const endpoint = `${BACKEND_API_BASE}download/file`;
-
-    console.log('Downloading file from:', endpoint);
 
     const response = await fetch(endpoint, {
       method: 'POST',

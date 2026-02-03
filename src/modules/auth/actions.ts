@@ -342,29 +342,20 @@ export const setStep = (step: string): SetStepAction => ({
   payload: step,
 });
 
-export const setUserId = (userId: string): SetUserIdAction => {
-  console.log('[ACTION] setUserId called with:', userId);
-  return {
-    type: AUTH_SET_USER_ID,
-    payload: userId,
-  };
-};
+export const setUserId = (userId: string): SetUserIdAction => ({
+  type: AUTH_SET_USER_ID,
+  payload: userId,
+});
 
-export const setRoleId = (roleId: string): SetRoleIdAction => {
-  console.log('[ACTION] setRoleId called with:', roleId);
-  return {
-    type: AUTH_SET_ROLE_ID,
-    payload: roleId,
-  };
-};
+export const setRoleId = (roleId: string): SetRoleIdAction => ({
+  type: AUTH_SET_ROLE_ID,
+  payload: roleId,
+});
 
-export const setAuthenticated = (isAuthenticated: boolean): SetAuthenticatedAction => {
-  console.log('[ACTION] setAuthenticated called with:', isAuthenticated);
-  return {
-    type: AUTH_SET_AUTHENTICATED,
-    payload: isAuthenticated,
-  };
-};
+export const setAuthenticated = (isAuthenticated: boolean): SetAuthenticatedAction => ({
+  type: AUTH_SET_AUTHENTICATED,
+  payload: isAuthenticated,
+});
 
 // New action creators for forgot password OTP flow
 export const forgotPasswordVerifyOTPRequest = (payload: ForgotPasswordVerifyOTPRequest): ForgotPasswordVerifyOTPRequestAction => ({
@@ -499,7 +490,7 @@ export const emailSignup = (signupData: EmailSignupRequest) => {
       const response = await api.post<EmailSignupResponse>('/auth/email-signup', signupData);
       
       // Extract userId from response - api.post returns response.data already
-      const userId = response?.data?.userId || response?.userId;
+      const userId = (response as any)?.data?.userId || (response as any)?.userId || (response as any)?.data?.user?.user_id;
       
       // Dispatch signupSuccess first
       dispatch(signupSuccess(response));
@@ -507,8 +498,6 @@ export const emailSignup = (signupData: EmailSignupRequest) => {
       // Then dispatch setUserId to ensure it's set in Redux
       if (userId) {
         dispatch(setUserId(userId));
-      } else {
-        console.warn('[emailSignup] No userId found in response');
       }
       
       // Show success toast
@@ -538,16 +527,19 @@ export const emailLogin = (loginData: EmailLoginRequest) => {
       
       const response = await api.post<EmailLoginResponse>('/auth/email-login', loginData);
       
-      console.log('[emailLogin] Full API response:', response);
-      
       // Extract access token from response
       const accessToken = response?.data?.access_token;
-      console.log('[emailLogin] Extracted accessToken:', accessToken ? 'Found' : 'Not found');
       
-      // Store auth token
+      // Extract refresh token from response
+      const refreshToken = response?.data?.refresh_token;
+      
+      // Store auth tokens
       if (accessToken) {
         authTokenManager.setToken(accessToken);
-        console.log('[emailLogin] Token stored in authTokenManager');
+      }
+      
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
       }
       
       // Extract roleId - check multiple possible locations
@@ -558,9 +550,6 @@ export const emailLogin = (loginData: EmailLoginRequest) => {
         roleId = (response.data.user as any).role_id;
       }
       
-      console.log('[emailLogin] Extracted roleId:', roleId);
-      console.log('[emailLogin] User object:', response?.data?.user);
-      
       // Create user object from response
       const user: User = {
         id: response?.data?.user?.user_id || '',
@@ -569,18 +558,13 @@ export const emailLogin = (loginData: EmailLoginRequest) => {
         role: (roleId as UserRole) || 'student',
       };
       
-      console.log('[emailLogin] Created user object:', user);
-      
       // Dispatch loginSuccess FIRST to set user and isAuthenticated
       dispatch(loginSuccess(user));
-      console.log('[emailLogin] Dispatched loginSuccess');
+      dispatch(setUserId(user.id))
       
       // Then dispatch setRoleId to ensure it's in Redux
       if (roleId) {
-        console.log('[emailLogin] Dispatching setRoleId:', roleId);
         dispatch(setRoleId(roleId));
-      } else {
-        console.warn('[emailLogin] roleId is undefined, using default role from user object');
       }
       
       // Save auth data to localStorage
@@ -595,10 +579,7 @@ export const emailLogin = (loginData: EmailLoginRequest) => {
             role: user.role,
           },
         };
-        console.log('[emailLogin] Saving auth data to localStorage:', authDataToSave);
         storageManager.saveAuthData(authDataToSave);
-      } else {
-        console.warn('[emailLogin] Missing required data for localStorage:', { accessToken: !!accessToken, userId: user.id });
       }
       
       // Show success toast
@@ -607,7 +588,6 @@ export const emailLogin = (loginData: EmailLoginRequest) => {
       return response;
     } catch (error: any) {
       const errorMessage = error.message || 'Login failed';
-      console.error('[emailLogin] Error:', errorMessage);
       dispatch(loginFailure(errorMessage));
       
       // Show error toast
@@ -709,6 +689,7 @@ export const resetPassword = (resetData: ResetPasswordRequest) => {
 export const logoutUser = () => {
   return (dispatch: any) => {
     authTokenManager.removeToken();
+    localStorage.removeItem('refreshToken');
     storageManager.clearAuthData();
     dispatch(logout());
   };
@@ -753,18 +734,22 @@ export const setupProfile = (profileData: {
     try {
       const response = await api.post<ProfileCompletionResponse>('/auth/profile-setup', profileData);
       
-      console.log('[setupProfile] API Response:', response);
+      // Extract userId from response
+      const userId = (response as any)?.data?.userId || (response as any)?.userId;
       
       // Extract roleId from response
-      const roleId = response?.data?.roleId || response?.roleId;
-      console.log('[setupProfile] Extracted roleId:', roleId);
+      const roleId = (response as any)?.data?.roleId || (response as any)?.roleId;
       
       // Dispatch profile completion success
       dispatch(profileCompletionSuccess(response));
       
+      // Dispatch setUserId to store in Redux
+      if (userId) {
+        dispatch(setUserId(userId));
+      }
+      
       // Dispatch setRoleId to store in Redux
       if (roleId) {
-        console.log('[setupProfile] Dispatching setRoleId with:', roleId);
         dispatch(setRoleId(roleId));
       }
       

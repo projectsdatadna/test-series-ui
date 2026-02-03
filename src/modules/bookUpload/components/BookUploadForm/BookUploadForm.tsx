@@ -166,7 +166,7 @@ export const BookUploadForm: React.FC = () => {
         [uploadedFile],
         chapterName || uploadedFile.name,
         'book',
-        (fileName, progress) => {
+        (_fileName, progress) => {
           dispatch(setUploadProgress(progress));
         }
       );
@@ -175,16 +175,16 @@ export const BookUploadForm: React.FC = () => {
         throw new Error('File upload failed');
       }
 
-      const fileId = uploadResponse[0].fileId;
+      const fileId = uploadResponse[0].fileId || null;
       dispatch(setFileId(fileId));
 
       // Use chapter name from input or fallback to filename
-      const finalChapterName = chapterName || uploadedFile.name;
+      const finalChapterName = (chapterName?.trim() || uploadedFile.name || 'Untitled') ?? null;
 
       // Step 2: Upload book metadata to backend
       await uploadBookMetadata({
-        fileId,
-        fileName: uploadedFile.name,
+        fileId: fileId || '',
+        fileName: uploadedFile.name ?? 'document.pdf',
         syllabusId: selectedSyllabus.id,
         standardId: selectedStandard.id,
         subjectId: selectedSubject.id,

@@ -2,7 +2,7 @@
  * Book Upload Module Actions
  */
 
-import type { BookUploadState, DropdownOption } from './types';
+import type { DropdownOption } from './types';
 
 export const SET_UPLOADED_FILE = 'bookUpload/SET_UPLOADED_FILE';
 export const SET_SELECTED_SYLLABUS = 'bookUpload/SET_SELECTED_SYLLABUS';

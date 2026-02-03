@@ -4,6 +4,8 @@
 
 import type { AdaptiveContentState } from './types';
 import type { AnyAction } from 'redux';
+import { contentLibraryReducer } from './contentLibrary/reducer';
+import type { ContentLibraryAction } from './contentLibrary/reducer';
 
 export const ADAPTIVE_CONTENT_LOAD_REQUEST = 'adaptiveContent/LOAD_REQUEST';
 export const ADAPTIVE_CONTENT_LOAD_SUCCESS = 'adaptiveContent/LOAD_SUCCESS';
@@ -101,6 +103,7 @@ const initialState: AdaptiveContentState = {
   aiCredits: 128,
   recentlyGenerated: 14,
   contentBuilder: initialContentBuilderState,
+  contentLibrary: contentLibraryReducer(undefined, { type: 'SET_LOADING', payload: false } as ContentLibraryAction),
 };
 
 export const adaptiveContentReducer = (
@@ -306,6 +309,19 @@ export const adaptiveContentReducer = (
           ...state.contentBuilder,
           generateContentApiLoading: action.payload,
         },
+      };
+
+    // Content Library actions
+    case 'SET_LOADING':
+    case 'SET_ERROR':
+    case 'SET_ITEMS':
+    case 'SET_FILTERS':
+    case 'UPDATE_STATS':
+    case 'ADD_ITEM':
+    case 'REMOVE_ITEM':
+      return {
+        ...state,
+        contentLibrary: contentLibraryReducer(state.contentLibrary, action as ContentLibraryAction),
       };
 
     default:

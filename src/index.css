@@ -37,6 +37,15 @@
   box-sizing: border-box;
 }
 
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -44,7 +53,7 @@ body {
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: none;
 }
 
 @media (prefers-color-scheme: light) {

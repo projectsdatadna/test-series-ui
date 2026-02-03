@@ -15,6 +15,7 @@ export type PageId =
   | 'remedial-lab'
   | 'adaptive-content'
   | 'content-builder'
+  | 'content-library'
   | 'book-upload'
   | 'students'
   | 'reports'

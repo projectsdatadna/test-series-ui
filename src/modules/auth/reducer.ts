@@ -115,9 +115,6 @@ export const authReducer = (
       };
 
     case AUTH_SIGNUP_SUCCESS:
-      console.log('[REDUCER] AUTH_SIGNUP_SUCCESS case triggered');
-      console.log('[REDUCER] action.payload:', action.payload);
-      console.log('[REDUCER] Previous state.userId:', state.userId);
       return {
         ...state,
         loading: false,
@@ -258,27 +255,18 @@ export const authReducer = (
       };
 
     case AUTH_SET_USER_ID:
-      console.log('[REDUCER] AUTH_SET_USER_ID case triggered');
-      console.log('[REDUCER] action.payload:', action.payload);
-      console.log('[REDUCER] Previous state.userId:', state.userId);
-      const newState = {
+      return {
         ...state,
         userId: action.payload,
       };
-      console.log('[REDUCER] New state.userId:', newState.userId);
-      return newState;
 
     case AUTH_SET_ROLE_ID:
-      console.log('[REDUCER] AUTH_SET_ROLE_ID case triggered');
-      console.log('[REDUCER] action.payload:', action.payload);
       return {
         ...state,
         roleId: action.payload as UserRole,
       };
 
     case AUTH_SET_AUTHENTICATED:
-      console.log('[REDUCER] AUTH_SET_AUTHENTICATED case triggered');
-      console.log('[REDUCER] action.payload:', action.payload);
       return {
         ...state,
         isAuthenticated: action.payload,

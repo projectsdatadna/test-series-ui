@@ -12,6 +12,7 @@ import { AssessmentBuilder } from './modules/assessmentBuilder/components/Assess
 import { RemedialLab } from './modules/remedialLab/components/RemedialLab';
 import { AdaptiveContent } from './modules/adaptiveContent/components/AdaptiveContent';
 import { ContentBuilder } from './modules/adaptiveContent/components/ContentBuilder';
+import { ContentLibrary } from './modules/adaptiveContent/components/ContentLibrary';
 import { AssessmentConfigurator } from './modules/assessmentConfigurator/components/AssessmentConfigurator';
 import { BookUploadPage } from './modules/bookUpload/components/BookUploadPage';
 import { setRoleId, loginSuccess } from './modules/auth/actions';
@@ -31,22 +32,16 @@ const App: React.FC = () => {
     const token = localStorage.getItem('authToken');
     const authData = storageManager.getAuthData();
 
-    console.log('[App] Checking localStorage for authToken:', token ? 'Found' : 'Not found');
-    console.log('[App] Checking localStorage for authData:', authData ? 'Found' : 'Not found');
-
     if (token && authData) {
-      console.log('[App] Auth data found in localStorage, restoring...');
 
       // Restore user data first
       if (authData.user) {
         dispatch(loginSuccess(authData.user) as any);
-        console.log('[App] Restored user data:', authData.user);
       }
 
       // Restore roleId
       if (authData.roleId) {
         dispatch(setRoleId(authData.roleId) as any);
-        console.log('[App] Restored roleId:', authData.roleId);
       }
     }
   }, []); // Empty dependency array - run only once on mount
@@ -79,6 +74,8 @@ const App: React.FC = () => {
           return <AdaptiveContent />;
         case 'content-builder':
           return <ContentBuilder />;
+        case 'content-library':
+          return <ContentLibrary />;
         case 'book-upload':
           return <BookUploadPage />;
         default:

@@ -3,14 +3,24 @@
  * Handles API calls for syllabus, standards, subjects, and chapters
  */
 
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:3001';
+import { api } from '../../../utils/api';
 
 export interface HierarchyItem {
   id: string;
   name: string;
   fileId?: string;
+  sections?: Array<{
+    number: string;
+    label: string;
+    subsections?: Array<{
+      number: string;
+      label: string;
+      subsections?: Array<{
+        number: string;
+        label: string;
+      }>;
+    }>;
+  }>;
 }
 
 interface SyllabusResponse {
@@ -36,6 +46,18 @@ interface ChapterResponse {
   chapterName: string;
   fileId: string;
   linkedAt: string;
+  sections?: Array<{
+    number: string;
+    label: string;
+    subsections?: Array<{
+      number: string;
+      label: string;
+      subsections?: Array<{
+        number: string;
+        label: string;
+      }>;
+    }>;
+  }>;
 }
 
 interface ApiResponse<T> {
@@ -49,9 +71,9 @@ interface ApiResponse<T> {
  */
 export const getSyllabuses = async (): Promise<HierarchyItem[]> => {
   try {
-    const response = await axios.get<ApiResponse<SyllabusResponse>>(`${API_BASE_URL}/hierarchy/syllabi`);
-    if (response.data.success && response.data.data) {
-      return response.data.data.map((item) => ({
+    const response = await api.get<ApiResponse<SyllabusResponse>>(`hierarchy/syllabi`);
+    if (response.success && response.data) {
+      return response.data.map((item) => ({
         id: item.syllabusId,
         name: item.syllabusName,
       }));
@@ -68,11 +90,11 @@ export const getSyllabuses = async (): Promise<HierarchyItem[]> => {
  */
 export const getStandards = async (syllabusId: string): Promise<HierarchyItem[]> => {
   try {
-    const response = await axios.get<ApiResponse<StandardResponse>>(
-      `${API_BASE_URL}/hierarchy/standards/${syllabusId}`
+    const response = await api.get<ApiResponse<StandardResponse>>(
+      `hierarchy/standards/${syllabusId}`
     );
-    if (response.data.success && response.data.data) {
-      return response.data.data.map((item) => ({
+    if (response.success && response.data) {
+      return response.data.map((item) => ({
         id: item.standardId,
         name: item.standardName,
       }));
@@ -89,11 +111,11 @@ export const getStandards = async (syllabusId: string): Promise<HierarchyItem[]>
  */
 export const getSubjects = async (standardId: string): Promise<HierarchyItem[]> => {
   try {
-    const response = await axios.get<ApiResponse<SubjectResponse>>(
-      `${API_BASE_URL}/hierarchy/subjects/${standardId}`
+    const response = await api.get<ApiResponse<SubjectResponse>>(
+      `hierarchy/subjects/${standardId}`
     );
-    if (response.data.success && response.data.data) {
-      return response.data.data.map((item) => ({
+    if (response.success && response.data) {
+      return response.data.map((item) => ({
         id: item.subjectId,
         name: item.subjectName,
       }));
@@ -119,14 +141,15 @@ export const getChapters = async (
     if (syllabusId) params.append('syllabusId', syllabusId);
     if (standardId) params.append('standardId', standardId);
 
-    const response = await axios.get<ApiResponse<ChapterResponse>>(
-      `${API_BASE_URL}/hierarchy/chapters?${params.toString()}`
+    const response = await api.get<ApiResponse<ChapterResponse>>(
+      `hierarchy/chapters?${params.toString()}`
     );
-    if (response.data.success && response.data.data) {
-      return response.data.data.map((item) => ({
+    if (response.success && response.data) {
+      return response.data.map((item) => ({
         id: item.chapterId,
         name: item.chapterName,
         fileId: item.fileId,
+        sections: item.sections,
       }));
     }
     return [];

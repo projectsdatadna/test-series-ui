@@ -26,18 +26,70 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor for error handling and token refresh
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     return response;
   },
-  (error) => {
-    // Don't redirect on 401 errors during login/auth flows
-    // Let the components handle the error with toast notifications
-    if (error.response?.status === 401) {
-      // Only clear token, don't redirect to prevent page reload
-      localStorage.removeItem('authToken');
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Handle 401 errors - try to refresh token
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        
+        if (!refreshToken) {
+          // No refresh token available, clear auth and reject
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('refreshToken');
+          return Promise.reject(error);
+        }
+
+        // Call refresh token endpoint
+        const refreshResponse = await axios.post(
+          `${API_BASE_URL}auth/refresh-token`,
+          { refreshToken },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (refreshResponse.data?.data?.access_token) {
+          const newAccessToken = refreshResponse.data.data.access_token;
+          
+          // Update stored token
+          localStorage.setItem('authToken', newAccessToken);
+          
+          // Update the failed request with new token
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          
+          // Retry the original request
+          return apiClient(originalRequest);
+        } else {
+          // Refresh failed, clear tokens
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('refreshToken');
+          return Promise.reject(error);
+        }
+      } catch (refreshError) {
+        // Refresh token request failed, clear auth
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('refreshToken');
+        return Promise.reject(refreshError);
+      }
     }
+
+    // For other 401 errors or if retry already attempted
+    if (error.response?.status === 401) {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+    }
+
     return Promise.reject(error);
   }
 );

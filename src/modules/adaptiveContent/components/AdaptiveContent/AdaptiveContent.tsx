@@ -38,11 +38,15 @@ export const AdaptiveContent: React.FC = () => {
   const contentTypes = useSelector(adaptiveContentSelector.getContentTypes);
   const aiCredits = useSelector(adaptiveContentSelector.getAICredits);
   const recentlyGenerated = useSelector(adaptiveContentSelector.getRecentlyGenerated);
-  console.log(contentTypes,'contentTypes')
 
   const handleAIGenerate = (contentTypeId: string) => {
     dispatch(contentBuilderSetSelectedContentType(contentTypeId) as any);
     dispatch(setCurrentPage('content-builder') as any);
+  };
+
+  const handleViewLibrary = (contentTypeId: string) => {
+    dispatch(contentBuilderSetSelectedContentType(contentTypeId) as any);
+    dispatch(setCurrentPage('content-library') as any);
   };
 
   return (
@@ -75,7 +79,7 @@ export const AdaptiveContent: React.FC = () => {
                   </span>
                   AI Generate
                 </PrimaryButton>
-                <SecondaryButton>
+                <SecondaryButton onClick={() => handleViewLibrary(contentType.id)}>
                   <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>
                     library_books
                   </span>

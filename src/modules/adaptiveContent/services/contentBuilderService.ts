@@ -9,6 +9,7 @@ import { uploadLargeFiles } from '../../../utils/largeFileUploadApi';
 export interface GenerateAdaptiveContentRequest {
   fileId: string;
   sectionNumber: number;
+  section_no?: string;
   topicName: string;
   contentType: string;
   contentDepth: 'beginner' | 'intermediate' | 'advanced';
