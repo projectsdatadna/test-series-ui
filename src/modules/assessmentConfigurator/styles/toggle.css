@@ -1,0 +1,58 @@
+/* Answer Key Toggle Styles */
+.answer-key-toggle-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.answer-key-toggle-box {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 2.5rem;
+  height: 1.375rem;
+  background-color: #e2e8f0;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+  flex-shrink: 0;
+}
+
+.answer-key-toggle-box::after {
+  content: '';
+  position: absolute;
+  top: 0px;
+  left: 2px;
+  background-color: white;
+  border-radius: 9999px;
+  height: 1.125rem;
+  width: 1.125rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.answer-key-toggle-input:checked + .answer-key-toggle-box {
+  background-color: #10b981;
+  border-color: #059669;
+}
+
+.answer-key-toggle-input:checked + .answer-key-toggle-box::after {
+  transform: translateX(1rem);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  .answer-key-toggle-box {
+    background-color: #475569;
+  }
+
+  .answer-key-toggle-box::after {
+    background-color: #f1f5f9;
+  }
+}

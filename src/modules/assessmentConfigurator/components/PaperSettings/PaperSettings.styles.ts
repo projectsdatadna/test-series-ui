@@ -8,13 +8,19 @@ export const PaperSettingsSection = styled.section`
   border-radius: 0.75rem;
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  min-width: 100%;
-  height: calc(100vh - 220px);
+  width: 100%;
+  height: auto;
+  max-height: calc(100vh - 220px);
   overflow: hidden;
 
+  @media (min-width: 640px) {
+    height: calc(100vh - 220px);
+  }
+
   @media (min-width: 1024px) {
-    min-width: 380px;
+    width: 30%;
     height: 100%;
+    max-height: none;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -265,6 +271,28 @@ export const QuestionConfigRow = styled.div`
     &:hover {
       border-color: rgba(37, 99, 235, 0.3);
     }
+  }
+`;
+
+export const QuestionConfigLabelRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0 0.75rem 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+`;
+
+export const QuestionConfigLabelItem = styled.span`
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  text-align: center;
+
+  @media (prefers-color-scheme: dark) {
+    color: #94a3b8;
   }
 `;
 

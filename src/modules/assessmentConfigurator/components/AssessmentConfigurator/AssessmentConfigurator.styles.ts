@@ -21,10 +21,13 @@ export const AssessmentConfiguratorContainer = styled.div`
   }
 `;
 
-export const ResponsiveSection = styled.div<{ $visibility?: 'hidden' | 'visible' }>`
+export const ResponsiveSection = styled.div<{ $visibility?: 'hidden' | 'visible'; $width?: string }>`
   display: ${(props) => (props.$visibility === 'hidden' ? 'none' : 'flex')};
+  width: 100%;
 
   @media (min-width: 1024px) {
     display: flex;
+    width: ${(props) => props.$width || 'auto'};
+    min-width: 0;
   }
 `;

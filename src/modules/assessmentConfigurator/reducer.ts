@@ -5,6 +5,7 @@ import {
   ASSESSMENT_SET_UPLOADED_FILE,
   ASSESSMENT_UPDATE_CHAPTER,
   ASSESSMENT_SELECT_ALL_CHAPTERS,
+  ASSESSMENT_SET_SELECTED_CHAPTER,
   ASSESSMENT_UPDATE_PAPER_SETTINGS,
   ASSESSMENT_UPDATE_QUESTION_CONFIG,
   ASSESSMENT_TOGGLE_ANSWER_KEY,
@@ -44,6 +45,11 @@ const initialState: AssessmentConfiguratorState = {
     uploadedFile: null,
     selectedChapters: initialChapters,
     uploadProgress: 0,
+    selectedChapterId: null,
+    selectedChapterFileId: null,
+    selectedChapterName: null,
+    selectedSubjectName: null,
+    selectedStandardId: null,
   },
   paperSettings: {
     boardPattern: 'CBSE',
@@ -104,6 +110,19 @@ export const assessmentConfiguratorReducer: Reducer<AssessmentConfiguratorState,
         },
       };
 
+    case ASSESSMENT_SET_SELECTED_CHAPTER:
+      return {
+        ...state,
+        contentSource: {
+          ...state.contentSource,
+          selectedChapterId: action.payload.chapterId,
+          selectedChapterFileId: action.payload.fileId,
+          selectedChapterName: action.payload.chapterName,
+          selectedSubjectName: action.payload.subjectName,
+          selectedStandardId: action.payload.standardId,
+        },
+      };
+
     case ASSESSMENT_UPDATE_PAPER_SETTINGS:
       return {
         ...state,
@@ -114,13 +133,16 @@ export const assessmentConfiguratorReducer: Reducer<AssessmentConfiguratorState,
       };
 
     case ASSESSMENT_UPDATE_QUESTION_CONFIG:
+      const updatedConfigs = state.paperSettings.questionConfigs.map((config) =>
+        config.type === action.payload.type ? action.payload : config,
+      );
+      const calculatedTotalMarks = updatedConfigs.reduce((sum, config) => sum + config.totalMarks, 0);
       return {
         ...state,
         paperSettings: {
           ...state.paperSettings,
-          questionConfigs: state.paperSettings.questionConfigs.map((config) =>
-            config.type === action.payload.type ? action.payload : config,
-          ),
+          questionConfigs: updatedConfigs,
+          totalMarks: calculatedTotalMarks,
         },
       };
 

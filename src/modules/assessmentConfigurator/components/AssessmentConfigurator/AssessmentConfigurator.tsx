@@ -11,15 +11,15 @@ export const AssessmentConfigurator: React.FC = () => {
 
   return (
     <AssessmentConfiguratorContainer>
-      <ResponsiveSection $visibility={activeTab === 'source' ? 'visible' : 'hidden'}>
+      <ResponsiveSection $visibility={activeTab === 'source' ? 'visible' : 'hidden'} $width="30%">
         <ContentSource />
       </ResponsiveSection>
 
-      <ResponsiveSection $visibility={activeTab === 'settings' ? 'visible' : 'hidden'}>
+      <ResponsiveSection $visibility={activeTab === 'settings' ? 'visible' : 'hidden'} $width="30%">
         <PaperSettings />
       </ResponsiveSection>
 
-      <ResponsiveSection $visibility={activeTab === 'preview' ? 'visible' : 'hidden'}>
+      <ResponsiveSection $visibility={activeTab === 'preview' ? 'visible' : 'hidden'} $width="40%">
         <PaperPreview />
       </ResponsiveSection>
     </AssessmentConfiguratorContainer>

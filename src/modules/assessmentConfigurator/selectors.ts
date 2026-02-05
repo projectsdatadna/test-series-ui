@@ -23,6 +23,21 @@ export const selectSelectedChaptersCount = (state: RootState) =>
     (chapter) => chapter.selected,
   ).length;
 
+export const selectSelectedChapterId = (state: RootState) =>
+  state.assessmentConfigurator.contentSource.selectedChapterId;
+
+export const selectSelectedChapterFileId = (state: RootState) =>
+  state.assessmentConfigurator.contentSource.selectedChapterFileId;
+
+export const selectSelectedChapterName = (state: RootState) =>
+  state.assessmentConfigurator.contentSource.selectedChapterName;
+
+export const selectSelectedSubjectName = (state: RootState) =>
+  state.assessmentConfigurator.contentSource.selectedSubjectName;
+
+export const selectSelectedStandardId = (state: RootState) =>
+  state.assessmentConfigurator.contentSource.selectedStandardId;
+
 // Paper settings
 export const selectPaperSettings = (state: RootState) =>
   state.assessmentConfigurator.paperSettings;
@@ -36,8 +51,10 @@ export const selectTotalDuration = (state: RootState) =>
 export const selectDifficultyLevel = (state: RootState) =>
   state.assessmentConfigurator.paperSettings.difficultyLevel;
 
-export const selectTotalMarks = (state: RootState) =>
-  state.assessmentConfigurator.paperSettings.totalMarks;
+export const selectTotalMarks = (state: RootState) => {
+  const questionConfigs = state.assessmentConfigurator.paperSettings.questionConfigs;
+  return questionConfigs.reduce((sum, config) => sum + config.totalMarks, 0);
+};
 
 export const selectQuestionConfigs = (state: RootState) =>
   state.assessmentConfigurator.paperSettings.questionConfigs;

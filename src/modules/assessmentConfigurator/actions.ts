@@ -2,6 +2,7 @@ import type {
   AssessmentConfiguratorState,
   QuestionConfig,
   PaperSettings,
+  GeneratedPaperData,
 } from './types';
 
 // Action types
@@ -9,6 +10,7 @@ export const ASSESSMENT_SET_ACTIVE_TAB = 'assessmentConfigurator/SET_ACTIVE_TAB'
 export const ASSESSMENT_SET_UPLOADED_FILE = 'assessmentConfigurator/SET_UPLOADED_FILE';
 export const ASSESSMENT_UPDATE_CHAPTER = 'assessmentConfigurator/UPDATE_CHAPTER';
 export const ASSESSMENT_SELECT_ALL_CHAPTERS = 'assessmentConfigurator/SELECT_ALL_CHAPTERS';
+export const ASSESSMENT_SET_SELECTED_CHAPTER = 'assessmentConfigurator/SET_SELECTED_CHAPTER';
 export const ASSESSMENT_UPDATE_PAPER_SETTINGS = 'assessmentConfigurator/UPDATE_PAPER_SETTINGS';
 export const ASSESSMENT_UPDATE_QUESTION_CONFIG = 'assessmentConfigurator/UPDATE_QUESTION_CONFIG';
 export const ASSESSMENT_TOGGLE_ANSWER_KEY = 'assessmentConfigurator/TOGGLE_ANSWER_KEY';
@@ -39,6 +41,17 @@ export const selectAllChapters = (selected: boolean) => ({
   payload: selected,
 });
 
+export const setSelectedChapter = (
+  chapterId: string | null,
+  fileId: string | null,
+  chapterName: string | null,
+  subjectName: string | null,
+  standardId: string | null
+) => ({
+  type: ASSESSMENT_SET_SELECTED_CHAPTER,
+  payload: { chapterId, fileId, chapterName, subjectName, standardId },
+});
+
 export const updatePaperSettings = (settings: Partial<PaperSettings>) => ({
   type: ASSESSMENT_UPDATE_PAPER_SETTINGS,
   payload: settings,
@@ -57,7 +70,7 @@ export const startGenerating = () => ({
   type: ASSESSMENT_START_GENERATING,
 });
 
-export const generateSuccess = (paper: string) => ({
+export const generateSuccess = (paper: GeneratedPaperData) => ({
   type: ASSESSMENT_GENERATE_SUCCESS,
   payload: paper,
 });

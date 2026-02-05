@@ -1,0 +1,263 @@
+/* Print Styles for Assessment Paper */
+
+@media print {
+  /* Hide everything by default */
+  * {
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+
+  body > * {
+    display: none !important;
+  }
+
+  /* Show only the preview section */
+  #section-preview {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background-color: white !important;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* Hide header and footer */
+  #section-preview > div:nth-of-type(1),
+  #section-preview > div:nth-of-type(3),
+  #section-preview > div:nth-of-type(4) {
+    display: none !important;
+  }
+
+  /* Show content area */
+  #section-preview > div:nth-of-type(2) {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  /* Page styles */
+  [data-page] {
+    display: block !important;
+    page-break-after: always;
+    break-after: page;
+    margin: 0 !important;
+    padding: 20mm !important;
+    width: 100% !important;
+    height: auto !important;
+    background-color: white !important;
+    box-sizing: border-box;
+  }
+
+  [data-page]:last-child {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Document container */
+  [data-page] > div {
+    display: block !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Ensure all content is visible */
+  [data-page] * {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Watermark - hide it */
+  [data-page] svg,
+  [data-page] .watermark {
+    display: none !important;
+  }
+
+  /* Header styles */
+  [data-header] {
+    display: block !important;
+    margin-bottom: 15mm !important;
+    padding-bottom: 5mm !important;
+    border-bottom: 2px solid #000 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  [data-header-title] {
+    display: block !important;
+    font-size: 18pt !important;
+    font-weight: bold !important;
+    margin-bottom: 3mm !important;
+    color: #000 !important;
+  }
+
+  [data-header-subtitle] {
+    display: block !important;
+    font-size: 14pt !important;
+    font-weight: bold !important;
+    margin-bottom: 3mm !important;
+    color: #000 !important;
+  }
+
+  [data-header-meta] {
+    display: block !important;
+    font-size: 10pt !important;
+    color: #000 !important;
+  }
+
+  [data-header-meta] span {
+    display: inline-block !important;
+    margin-right: 10mm !important;
+    color: #000 !important;
+  }
+
+  /* Section styles */
+  [data-section] {
+    display: block !important;
+    margin-bottom: 5mm !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  [data-section-title] {
+    display: block !important;
+    font-size: 12pt !important;
+    font-weight: bold !important;
+    margin-bottom: 3mm !important;
+    text-decoration: underline !important;
+    color: #000 !important;
+  }
+
+  /* Question styles */
+  [data-question] {
+    display: block !important;
+    margin-bottom: 5mm !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  [data-question-text] {
+    display: block !important;
+    font-size: 11pt !important;
+    font-weight: bold !important;
+    margin-bottom: 2mm !important;
+    color: #000 !important;
+  }
+
+  [data-option] {
+    display: block !important;
+    font-size: 10pt !important;
+    margin-left: 5mm !important;
+    margin-bottom: 1mm !important;
+    color: #000 !important;
+  }
+
+  [data-answer] {
+    display: block !important;
+    font-size: 10pt !important;
+    font-style: italic !important;
+    color: #0066cc !important;
+    margin-top: 2mm !important;
+    margin-bottom: 3mm !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Text styles */
+  p,
+  span,
+  div,
+  li {
+    color: #000 !important;
+    background-color: transparent !important;
+    font-family: Arial, sans-serif !important;
+  }
+
+  /* Remove transforms */
+  * {
+    transform: none !important;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Hide interactive elements */
+  button,
+  input,
+  select,
+  textarea,
+  header,
+  footer,
+  nav,
+  .material-symbols-outlined {
+    display: none !important;
+  }
+
+  /* Ensure links are visible */
+  a {
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+
+  /* Image styles */
+  img {
+    max-width: 100%;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* List styles */
+  ul,
+  ol {
+    margin-left: 5mm !important;
+    color: #000 !important;
+  }
+
+  li {
+    margin-bottom: 1mm !important;
+    color: #000 !important;
+  }
+
+  /* Table styles */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  td,
+  th {
+    border: 1px solid #000 !important;
+    padding: 2mm !important;
+    color: #000 !important;
+  }
+}

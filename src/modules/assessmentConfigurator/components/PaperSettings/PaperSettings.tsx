@@ -1,7 +1,9 @@
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../../../hooks/useAppRedux';
 import { updatePaperSettings, updateQuestionConfig, startGenerating, generateSuccess } from '../../actions';
-import { selectPaperSettings, selectTotalMarks, selectDifficultyLevel, selectQuestionConfigs } from '../../selectors';
+import { selectPaperSettings, selectTotalMarks, selectDifficultyLevel, selectQuestionConfigs, selectSelectedChapterFileId, selectSelectedSubjectName, selectSelectedChapterName } from '../../selectors';
+import { generateQuestions } from '../../services/assessmentService';
+import toast from 'react-hot-toast';
 import {
   PaperSettingsSection,
   SettingsHeader,
@@ -22,6 +24,8 @@ import {
   AddCustomButton,
   AddIcon,
   QuestionConfigRow,
+  QuestionConfigLabelRow,
+  QuestionConfigLabelItem,
   ConfigTypeSection,
   ConfigTypeName,
   ConfigTypeSection2,
@@ -49,10 +53,9 @@ export const PaperSettings: React.FC = () => {
   const totalMarks = useAppSelector(selectTotalMarks);
   const difficultyLevel = useAppSelector(selectDifficultyLevel);
   const questionConfigs = useAppSelector(selectQuestionConfigs);
-
-  const handleBoardPatternChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    dispatch(updatePaperSettings({ boardPattern: e.target.value as any }));
-  };
+  const selectedChapterFileId = useAppSelector(selectSelectedChapterFileId);
+  const selectedSubjectName = useAppSelector(selectSelectedSubjectName);
+  const selectedChapterName = useAppSelector(selectSelectedChapterName);
 
   const handleDurationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch(updatePaperSettings({ totalDuration: parseInt(e.target.value) as any }));
@@ -76,12 +79,36 @@ export const PaperSettings: React.FC = () => {
     dispatch(updateQuestionConfig(updatedConfig));
   };
 
-  const handleGeneratePaper = () => {
-    dispatch(startGenerating());
-    // Simulate paper generation
-    setTimeout(() => {
-      dispatch(generateSuccess('Paper generated successfully'));
-    }, 2000);
+  const handleGeneratePaper = async () => {
+    try {
+      if (!selectedChapterFileId) {
+        toast.error('Please select a chapter first');
+        return;
+      }
+
+      dispatch(startGenerating());
+
+      const response = await generateQuestions({
+        fileId: selectedChapterFileId,
+        duration: paperSettings.totalDuration,
+        mcqCount: questionConfigs.find((c) => c.type === 'MCQs')?.count || 10,
+        shortAnswerCount: questionConfigs.find((c) => c.type === 'Short Ans')?.count || 5,
+        difficultyLevel: paperSettings.difficultyLevel.toLowerCase(),
+        subject: selectedSubjectName || '',
+        topic: selectedChapterName || '',
+      });
+
+      if (response.success) {
+        dispatch(generateSuccess(response?.data));
+        toast.success('Paper generated successfully!');
+      } else {
+        throw new Error(response.message || 'Failed to generate paper');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate paper';
+      toast.error(errorMessage);
+      console.error('Error generating paper:', error);
+    }
   };
 
   return (
@@ -99,14 +126,14 @@ export const PaperSettings: React.FC = () => {
 
       <ScrollContent>
         <SettingsGrid>
-          <FormGroup>
+          {/* <FormGroup>
             <FormLabel>Board Pattern</FormLabel>
             <Select onChange={handleBoardPatternChange} value={paperSettings.boardPattern}>
               <option value="CBSE">CBSE (Central Board)</option>
               <option value="ICSE">ICSE / ISC</option>
               <option value="STATE_BOARD">State Board</option>
             </Select>
-          </FormGroup>
+          </FormGroup> */}
 
           <FormGroup>
             <FormLabel>Total Duration</FormLabel>
@@ -126,6 +153,14 @@ export const PaperSettings: React.FC = () => {
               Add Custom Type
             </AddCustomButton>
           </ConfigHeaderRow>
+
+          <QuestionConfigLabelRow>
+            <QuestionConfigLabelItem style={{ gridColumn: 'span 5' }}>Type</QuestionConfigLabelItem>
+            <QuestionConfigLabelItem style={{ gridColumn: 'span 3' }}>No. of Questions</QuestionConfigLabelItem>
+            <QuestionConfigLabelItem style={{ gridColumn: 'span 1' }}>×</QuestionConfigLabelItem>
+            <QuestionConfigLabelItem style={{ gridColumn: 'span 2' }}>Marks</QuestionConfigLabelItem>
+            <QuestionConfigLabelItem style={{ gridColumn: 'span 1' }}>Total</QuestionConfigLabelItem>
+          </QuestionConfigLabelRow>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {questionConfigs.map((config, index) => (
