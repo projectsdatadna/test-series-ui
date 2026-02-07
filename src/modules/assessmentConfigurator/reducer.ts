@@ -27,13 +27,15 @@ const initialQuestionConfigs: QuestionConfig[] = [
     type: 'MCQs',
     section: 'Section A',
     count: 10,
+    compulsoryCount:10,
     marksPerQuestion: 1,
     totalMarks: 10,
   },
   {
     type: 'Short Ans',
     section: 'Section B',
-    count: 10,
+    count: 12,
+    compulsoryCount:10,
     marksPerQuestion: 2,
     totalMarks: 20,
   },
@@ -133,9 +135,22 @@ export const assessmentConfiguratorReducer: Reducer<AssessmentConfiguratorState,
       };
 
     case ASSESSMENT_UPDATE_QUESTION_CONFIG:
-      const updatedConfigs = state.paperSettings.questionConfigs.map((config) =>
-        config.type === action.payload.type ? action.payload : config,
+      // Check if this config already exists
+      const configExists = state.paperSettings.questionConfigs.some(
+        (config) => config.type === action.payload.type
       );
+      
+      let updatedConfigs: QuestionConfig[];
+      if (configExists) {
+        // Update existing config
+        updatedConfigs = state.paperSettings.questionConfigs.map((config) =>
+          config.type === action.payload.type ? action.payload : config,
+        );
+      } else {
+        // Add new config
+        updatedConfigs = [...state.paperSettings.questionConfigs, action.payload];
+      }
+      
       const calculatedTotalMarks = updatedConfigs.reduce((sum, config) => sum + config.totalMarks, 0);
       return {
         ...state,

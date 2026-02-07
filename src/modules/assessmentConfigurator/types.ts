@@ -5,6 +5,8 @@ export interface QuestionConfig {
   count: number;
   marksPerQuestion: number;
   totalMarks: number;
+  compulsoryCount?: number;
+  isCustom?: boolean;
 }
 
 // Chapter selection
@@ -60,17 +62,47 @@ export interface ShortAnswerQuestion {
   marksAllocated: number;
 }
 
+// Custom Question (Long Answer or Essay)
+export interface CustomQuestion {
+  questionNumber: number;
+  question: string;
+  expectedAnswer: string;
+  keyPoints: string[];
+  difficulty: string;
+  marksAllocated: number;
+}
+
+// Section in the paper
+export interface PaperSection {
+  sectionName: string;
+  type?: string;
+  totalQuestions: number;
+  marksPerQuestion: number;
+  totalMarks: number;
+  note?: string;
+}
+
+// Custom Section with questions
+export interface CustomSection {
+  section: string;
+  type: string;
+  questions: CustomQuestion[];
+}
+
 // Generated Paper Data
 export interface GeneratedPaperData {
   examDetails: {
     duration: number;
     totalQuestions: number;
+    totalMarks: number;
     subject: string;
     topic: string;
     difficultyLevel: string;
   };
+  sections?: PaperSection[];
   mcqQuestions: MCQQuestion[];
   shortAnswerQuestions: ShortAnswerQuestion[];
+  customQuestions?: CustomSection[];
   answerKey: {
     mcqAnswers: Array<{
       questionNumber: number;
@@ -81,6 +113,15 @@ export interface GeneratedPaperData {
       questionNumber: number;
       answer: string;
       keyPoints: string[];
+    }>;
+    customAnswers?: Array<{
+      section: string;
+      type: string;
+      answers: Array<{
+        questionNumber: number;
+        answer: string;
+        keyPoints: string[];
+      }>;
     }>;
   };
 }

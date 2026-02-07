@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { MCQQuestion, ShortAnswerQuestion } from '../../types';
 import {
   EditableQuestionText,
@@ -15,37 +15,52 @@ export const useInlineEditMode = (
   );
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Sync state when input questions change
+  useEffect(() => {
+    setEditedMCQs(mcqQuestions);
+  }, [mcqQuestions]);
+
+  useEffect(() => {
+    setEditedShortAnswers(shortAnswerQuestions);
+  }, [shortAnswerQuestions]);
+
   const handleMCQQuestionEdit = (index: number, newText: string) => {
+    if (index < 0 || index >= editedMCQs.length) return;
     const updated = [...editedMCQs];
     updated[index].question = newText;
     setEditedMCQs(updated);
   };
 
   const handleMCQOptionEdit = (index: number, option: 'A' | 'B' | 'C' | 'D', newText: string) => {
+    if (index < 0 || index >= editedMCQs.length) return;
     const updated = [...editedMCQs];
     updated[index].options[option] = newText;
     setEditedMCQs(updated);
   };
 
   const handleMCQExplanationEdit = (index: number, newText: string) => {
+    if (index < 0 || index >= editedMCQs.length) return;
     const updated = [...editedMCQs];
     updated[index].explanation = newText;
     setEditedMCQs(updated);
   };
 
   const handleShortAnswerQuestionEdit = (index: number, newText: string) => {
+    if (index < 0 || index >= editedShortAnswers.length) return;
     const updated = [...editedShortAnswers];
     updated[index].question = newText;
     setEditedShortAnswers(updated);
   };
 
   const handleShortAnswerEdit = (index: number, newText: string) => {
+    if (index < 0 || index >= editedShortAnswers.length) return;
     const updated = [...editedShortAnswers];
     updated[index].expectedAnswer = newText;
     setEditedShortAnswers(updated);
   };
 
   const handleKeyPointEdit = (questionIndex: number, pointIndex: number, newText: string) => {
+    if (questionIndex < 0 || questionIndex >= editedShortAnswers.length) return;
     const updated = [...editedShortAnswers];
     updated[questionIndex].keyPoints[pointIndex] = newText;
     setEditedShortAnswers(updated);

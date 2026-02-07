@@ -11,11 +11,11 @@ export const AssessmentConfigurator: React.FC = () => {
 
   return (
     <AssessmentConfiguratorContainer>
-      <ResponsiveSection $visibility={activeTab === 'source' ? 'visible' : 'hidden'} $width="30%">
+      <ResponsiveSection $visibility={activeTab === 'source' ? 'visible' : 'hidden'} $width="26%">
         <ContentSource />
       </ResponsiveSection>
 
-      <ResponsiveSection $visibility={activeTab === 'settings' ? 'visible' : 'hidden'} $width="30%">
+      <ResponsiveSection $visibility={activeTab === 'settings' ? 'visible' : 'hidden'} $width="35%">
         <PaperSettings />
       </ResponsiveSection>
 

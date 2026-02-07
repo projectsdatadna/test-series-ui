@@ -18,7 +18,7 @@ export const PaperSettingsSection = styled.section`
   }
 
   @media (min-width: 1024px) {
-    width: 30%;
+    width: 26%;
     height: 100%;
     max-height: none;
   }
@@ -138,16 +138,13 @@ export const SettingsGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
-
-  @media (min-width: 640px) {
-    grid-template-columns: 1fr 1fr;
-  }
 `;
 
 export const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
+  align-items: center;
 `;
 
 export const FormLabel = styled.label`
@@ -156,13 +153,14 @@ export const FormLabel = styled.label`
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.025em;
+  white-space: nowrap;
 
   @media (prefers-color-scheme: dark) {
     color: #64748b;
   }
 `;
 
-export const Select = styled.select`
+export const SelectStyled = styled.select`
   width: 100%;
   background-color: #f1f5f9;
   border: 1px solid #cbd5e1;
@@ -279,8 +277,8 @@ export const QuestionConfigLabelRow = styled.div`
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 0.5rem;
   align-items: center;
-  padding: 0 0.75rem 0.5rem 0.75rem;
-  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem 0.5rem 0.75rem;
+  margin-bottom: -0.5rem;
 `;
 
 export const QuestionConfigLabelItem = styled.span`
@@ -297,10 +295,10 @@ export const QuestionConfigLabelItem = styled.span`
 `;
 
 export const ConfigTypeSection = styled.div`
-  grid-column: span 5;
+  grid-column: span 3;
 
   @media (min-width: 640px) {
-    grid-column: span 4;
+    grid-column: span 3;
   }
 `;
 
@@ -373,7 +371,8 @@ export const ConfigResult = styled.div`
   grid-column: span 1;
 
   @media (min-width: 640px) {
-    grid-column: span 2;
+    grid-column: span 1;
+    padding-left:12px;
   }
 
   text-align: right;

@@ -11,7 +11,18 @@ export interface GenerateQuestionsRequest {
   fileId: string;
   duration?: number;
   mcqCount?: number;
+  mcqMarks?: number;
+  mcqCompulsory?: number;
   shortAnswerCount?: number;
+  shortAnswerMarks?: number;
+  shortAnswerCompulsory?: number;
+  customQuestions?: Array<{
+    type: string;
+    section: string;
+    count: number;
+    marks: number;
+    compulsory?: number;
+  }>;
   difficultyLevel?: string;
   subject?: string;
   topic?: string;
@@ -36,7 +47,12 @@ export const generateQuestions = async (
       fileId: request.fileId,
       duration: request.duration || 60,
       mcqCount: request.mcqCount || 10,
+      mcqMarks: request.mcqMarks || 1,
+      mcqCompulsory: request.mcqCompulsory || 0,
       shortAnswerCount: request.shortAnswerCount || 5,
+      shortAnswerMarks: request.shortAnswerMarks || 2,
+      shortAnswerCompulsory: request.shortAnswerCompulsory || 0,
+      customQuestions: request.customQuestions || [],
       difficultyLevel: request.difficultyLevel || 'medium',
       subject: request.subject || '',
       topic: request.topic || '',

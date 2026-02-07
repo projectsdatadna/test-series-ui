@@ -426,7 +426,6 @@ export const QuestionItem = styled.div`
 
 export const QuestionText = styled.p`
   font-weight: 600;
-  padding-right: 2rem;
   margin: 0 0 0.5rem 0;
   font-size: calc(0.8rem * var(--zoom-multiplier, 1));
 
